@@ -17,15 +17,22 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 	"os"
 
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/propagators"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/tracing"
 
 	"github.com/bboreham/kspan/controllers/events"
 	// +kubebuilder:scaffold:imports
@@ -42,18 +49,42 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+// initTracer creates a new trace provider instance and registers it as global trace provider.
+func initTracer() func() {
+	exp, err := otlp.NewExporter(
+		otlp.WithInsecure(),
+		otlp.WithAddress("172.16.0.4:55680"),
+	)
+	handleErr(err, "failed to create exporter")
+
+	bsp := sdktrace.NewBatchSpanProcessor(exp)
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithResource(resource.New(
+			// the service name used to display traces in backends
+			semconv.ServiceNameKey.String("events"),
+		)),
+		sdktrace.WithSpanProcessor(bsp),
+	)
+
+	// set global propagator to tracecontext (the default is no-op).
+	global.SetTextMapPropagator(propagators.TraceContext{})
+	global.SetTracerProvider(tracerProvider)
+
+	return func() {
+		bsp.Shutdown() // shutdown the processor
+		handleErr(exp.Shutdown(context.Background()), "failed to stop exporter")
+	}
+}
+
 func main() {
 	var metricsAddr string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	closer, err := tracing.SetupJaeger("event")
-	if err != nil {
-		setupLog.Error(err, "unable to start tracing")
-	}
-	defer closer.Close()
+	shutdown := initTracer()
+	defer shutdown()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -78,5 +109,11 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func handleErr(err error, message string) {
+	if err != nil {
+		log.Fatalf("%s: %v", message, err)
 	}
 }

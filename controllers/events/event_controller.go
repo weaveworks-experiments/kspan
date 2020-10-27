@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	ot "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/semconv"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
-	"sigs.k8s.io/controller-runtime/pkg/tracing"
 )
 
 // EventWatcher listens to Events
@@ -63,21 +63,27 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
+	_ = involved
+
 	operationName := fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason)
-	span, err := spanFromObject(ctx, operationName, involved, r.Client)
+	ctx, span := global.Tracer("event-controller").Start(ctx, operationName)
+	/*span, err := spanFromObject(ctx, operationName, involved, r.Client)
 	if err != nil {
 		log.Error(err, "unable to find span")
 		return ctrl.Result{}, nil // nothing else we can do
 	}
 	if span == nil {
 		return ctrl.Result{}, nil // no parent context found; don't create a span for this event
-	}
-	span.SetTag("type", event.Type)
-	span.SetTag("kind", event.InvolvedObject.Kind)
-	span.SetTag("namespace", event.InvolvedObject.Namespace)
-	span.SetTag("name", event.InvolvedObject.Name)
-	span.SetTag("message", event.Message)
-	span.Finish()
+	}*/
+	span.SetAttributes(
+		semconv.HostNameKey.String(event.Source.Host),
+		label.String("type", event.Type),
+		label.String("kind", event.InvolvedObject.Kind),
+		label.String("namespace", event.InvolvedObject.Namespace),
+		label.String("name", event.InvolvedObject.Name),
+		label.String("message", event.Message),
+	)
+	span.End()
 
 	return ctrl.Result{}, nil
 }
@@ -95,7 +101,7 @@ func getObjectFromReference(ref corev1.ObjectReference, c client.Client) (runtim
 	return obj, err
 }
 
-func spanFromObject(ctx context.Context, name string, obj runtime.Object, c client.Client) (ot.Span, error) {
+/*func spanFromObject(ctx context.Context, name string, obj runtime.Object, c client.Client) (trace.Span, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -127,7 +133,7 @@ func spanFromObject(ctx context.Context, name string, obj runtime.Object, c clie
 		}
 	}
 	return span, nil
-}
+}*/
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
