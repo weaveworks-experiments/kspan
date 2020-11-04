@@ -59,6 +59,9 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	involved, err := getObjectFromReference(event.InvolvedObject, r.Client)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil // again, happens so often it's not worth logging
+		}
 		log.Error(err, "unable to fetch involved object")
 		return ctrl.Result{}, nil
 	}
