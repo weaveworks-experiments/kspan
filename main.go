@@ -25,9 +25,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	"go.opentelemetry.io/otel/propagators"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -49,31 +47,16 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-// initTracer creates a new trace provider instance and registers it as global trace provider.
-func initTracer() func() {
+func SetupOTLP(serviceName string) (tracesdk.SpanExporter, error) {
 	exp, err := otlp.NewExporter(
 		otlp.WithInsecure(),
-		otlp.WithAddress("172.16.0.4:55680"),
+		otlp.WithAddress("otlp-collector.default:55680"),
 	)
-	handleErr(err, "failed to create exporter")
-
-	bsp := sdktrace.NewBatchSpanProcessor(exp)
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.New(
-			// the service name used to display traces in backends
-			semconv.ServiceNameKey.String("events"),
-		)),
-		sdktrace.WithSpanProcessor(bsp),
-	)
-
-	// set global propagator to tracecontext (the default is no-op).
-	global.SetTextMapPropagator(propagators.TraceContext{})
-	global.SetTracerProvider(tracerProvider)
-
-	return func() {
-		bsp.Shutdown() // shutdown the processor
-		handleErr(exp.Shutdown(context.Background()), "failed to stop exporter")
+	if err != nil {
+		return nil, err
 	}
+	global.SetTextMapPropagator(propagators.TraceContext{})
+	return exp, err
 }
 
 func main() {
@@ -83,8 +66,12 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	shutdown := initTracer()
-	defer shutdown()
+	spanExporter, err := SetupOTLP("events")
+	if err != nil {
+		setupLog.Error(err, "unable to set up tracing")
+		os.Exit(1)
+	}
+	defer spanExporter.Shutdown(context.Background())
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -97,8 +84,9 @@ func main() {
 	}
 
 	if err = (&events.EventWatcher{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log,
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log,
+		Exporter: spanExporter,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Events")
 		os.Exit(1)

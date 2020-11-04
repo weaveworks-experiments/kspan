@@ -3,25 +3,31 @@ package events
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/semconv"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/tracing"
 )
 
 // EventWatcher listens to Events
 type EventWatcher struct {
 	client.Client
-	Log logr.Logger
+	Log      logr.Logger
+	Exporter tracesdk.SpanExporter
 }
 
 var (
@@ -66,29 +72,61 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	_ = involved
-
-	operationName := fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason)
-	ctx, span := global.Tracer("event-controller").Start(ctx, operationName)
-	/*span, err := spanFromObject(ctx, operationName, involved, r.Client)
+	remoteContext, err := spanContextFromObject(ctx, involved, r.Client)
 	if err != nil {
 		log.Error(err, "unable to find span")
 		return ctrl.Result{}, nil // nothing else we can do
 	}
-	if span == nil {
+	if !remoteContext.HasTraceID() {
 		return ctrl.Result{}, nil // no parent context found; don't create a span for this event
-	}*/
-	span.SetAttributes(
-		semconv.HostNameKey.String(event.Source.Host),
+	}
+
+	span := eventToSpan(remoteContext, &event)
+
+	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
+
+	return ctrl.Result{}, nil
+}
+
+func eventToSpan(remoteContext trace.SpanContext, event *corev1.Event) *tracesdk.SpanData {
+	// resource says which component the span is seen as coming from
+	res := resource.New(semconv.ServiceNameKey.String(event.Source.Component)) // TODO: cache these
+
+	attrs := []label.KeyValue{
 		label.String("type", event.Type),
 		label.String("kind", event.InvolvedObject.Kind),
 		label.String("namespace", event.InvolvedObject.Namespace),
 		label.String("name", event.InvolvedObject.Name),
 		label.String("message", event.Message),
-	)
-	span.End()
+	}
 
-	return ctrl.Result{}, nil
+	return &tracesdk.SpanData{
+		SpanContext: trace.SpanContext{
+			TraceID: remoteContext.TraceID,
+			SpanID:  eventToSpanID(event),
+		},
+		//ParentSpanID:    remoteContext.SpanID,
+		SpanKind:        trace.SpanKindInternal,
+		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
+		StartTime:       event.LastTimestamp.Time,
+		EndTime:         event.LastTimestamp.Time,
+		Attributes:      attrs,
+		HasRemoteParent: true,
+		Resource:        res,
+		//InstrumentationLibrary instrumentation.Library
+	}
+}
+
+// generate a spanID from an event.  The first time this event is issued has a span ID that can be derived from the event UID
+func eventToSpanID(event *corev1.Event) trace.SpanID {
+	f := fnv.New64a()
+	f.Write([]byte(event.UID))
+	if event.Count > 0 {
+		fmt.Fprint(f, event.Count)
+	}
+	var h trace.SpanID
+	_ = f.Sum(h[:0])
+	return h
 }
 
 func getObjectFromReference(ref corev1.ObjectReference, c client.Client) (runtime.Object, error) {
@@ -104,16 +142,13 @@ func getObjectFromReference(ref corev1.ObjectReference, c client.Client) (runtim
 	return obj, err
 }
 
-/*func spanFromObject(ctx context.Context, name string, obj runtime.Object, c client.Client) (trace.Span, error) {
+func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Client) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
-		return nil, err
+		return trace.EmptySpanContext(), err
 	}
-	span, err := tracing.SpanFromAnnotations(name, m.GetAnnotations())
-	if err != nil {
-		return nil, err
-	}
-	if span == nil {
+	remoteContext := tracing.SpanContextFromAnnotations(ctx, m.GetAnnotations())
+	if !remoteContext.HasTraceID() {
 		// This object doesn't have a span context; see if one of its owner chain does
 		for _, ownerRef := range m.GetOwnerReferences() {
 			owner := &unstructured.Unstructured{}
@@ -124,19 +159,19 @@ func getObjectFromReference(ref corev1.ObjectReference, c client.Client) (runtim
 				Name:      ownerRef.Name,
 			}, owner)
 			if err != nil {
-				return nil, err
+				return trace.EmptySpanContext(), err
 			}
-			span, err := spanFromObject(ctx, name, owner, c)
+			remoteContext, err := spanContextFromObject(ctx, owner, c)
 			if err != nil {
-				return nil, err
+				return trace.EmptySpanContext(), err
 			}
-			if span != nil {
-				return span, nil
+			if remoteContext.HasTraceID() {
+				return remoteContext, nil
 			}
 		}
 	}
-	return span, nil
-}*/
+	return remoteContext, nil
+}
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
