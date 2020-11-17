@@ -148,29 +148,30 @@ func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Cli
 		return trace.EmptySpanContext(), err
 	}
 	remoteContext := tracing.SpanContextFromAnnotations(ctx, m.GetAnnotations())
-	if !remoteContext.HasTraceID() {
-		// This object doesn't have a span context; see if one of its owner chain does
-		for _, ownerRef := range m.GetOwnerReferences() {
-			owner := &unstructured.Unstructured{}
-			owner.SetAPIVersion(ownerRef.APIVersion)
-			owner.SetKind(ownerRef.Kind)
-			err = c.Get(context.Background(), client.ObjectKey{
-				Namespace: m.GetNamespace(),
-				Name:      ownerRef.Name,
-			}, owner)
-			if err != nil {
-				return trace.EmptySpanContext(), err
-			}
-			remoteContext, err := spanContextFromObject(ctx, owner, c)
-			if err != nil {
-				return trace.EmptySpanContext(), err
-			}
-			if remoteContext.HasTraceID() {
-				return remoteContext, nil
-			}
+	if remoteContext.HasTraceID() {
+		return remoteContext, nil
+	}
+	// This object doesn't have a span context; see if one of its owner chain does
+	for _, ownerRef := range m.GetOwnerReferences() {
+		owner := &unstructured.Unstructured{}
+		owner.SetAPIVersion(ownerRef.APIVersion)
+		owner.SetKind(ownerRef.Kind)
+		err = c.Get(context.Background(), client.ObjectKey{
+			Namespace: m.GetNamespace(),
+			Name:      ownerRef.Name,
+		}, owner)
+		if err != nil {
+			return trace.EmptySpanContext(), err
+		}
+		remoteContext, err := spanContextFromObject(ctx, owner, c)
+		if err != nil {
+			return trace.EmptySpanContext(), err
+		}
+		if remoteContext.HasTraceID() {
+			return remoteContext, nil
 		}
 	}
-	return remoteContext, nil
+	return trace.EmptySpanContext(), nil
 }
 
 // SetupWithManager to set up the watcher
