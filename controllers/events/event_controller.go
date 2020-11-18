@@ -66,7 +66,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
 	// Find which object the Event relates to
-	involved, err := getObjectFromReference(event.InvolvedObject, r.Client)
+	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, event.InvolvedObject.Kind, event.InvolvedObject.Namespace, event.InvolvedObject.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil // again, happens so often it's not worth logging
@@ -134,16 +134,15 @@ func eventToSpanID(event *corev1.Event) trace.SpanID {
 	return h
 }
 
-func getObjectFromReference(ref corev1.ObjectReference, c client.Client) (runtime.Object, error) {
+func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace, name string) (runtime.Object, error) {
 	obj := &unstructured.Unstructured{}
-	apiVersion := ref.APIVersion
 	if apiVersion == "" { // this happens with Node references
 		apiVersion = "v1" // TODO: find a more general solution
 	}
 	obj.SetAPIVersion(apiVersion)
-	obj.SetKind(ref.Kind)
-	key := client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}
-	err := c.Get(context.Background(), key, obj)
+	obj.SetKind(kind)
+	key := client.ObjectKey{Namespace: namespace, Name: name}
+	err := c.Get(ctx, key, obj)
 	return obj, err
 }
 
@@ -158,13 +157,7 @@ func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Cli
 	}
 	// This object doesn't have a span context; see if one of its owner chain does
 	for _, ownerRef := range m.GetOwnerReferences() {
-		owner := &unstructured.Unstructured{}
-		owner.SetAPIVersion(ownerRef.APIVersion)
-		owner.SetKind(ownerRef.Kind)
-		err = c.Get(context.Background(), client.ObjectKey{
-			Namespace: m.GetNamespace(),
-			Name:      ownerRef.Name,
-		}, owner)
+		owner, err := getObject(ctx, c, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
 		if err != nil {
 			return trace.EmptySpanContext(), err
 		}
