@@ -51,6 +51,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("event", req.NamespacedName)
 
+	// Fetch the Event object
 	var event corev1.Event
 	if err := r.Get(ctx, req.NamespacedName, &event); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -61,8 +62,10 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
+	// Find which object the Event relates to
 	involved, err := getObjectFromReference(event.InvolvedObject, r.Client)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -72,6 +75,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
+	// See if we can map this object to a trace
 	remoteContext, err := spanContextFromObject(ctx, involved, r.Client)
 	if err != nil {
 		log.Error(err, "unable to find span")
@@ -81,6 +85,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil // no parent context found; don't create a span for this event
 	}
 
+	// Send out a span from the event details
 	span := eventToSpan(remoteContext, &event)
 
 	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
