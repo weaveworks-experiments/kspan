@@ -23,6 +23,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/tracing"
 )
 
+var (
+	noTrace = trace.EmptySpanContext()
+)
+
 // EventWatcher listens to Events
 type EventWatcher struct {
 	client.Client
@@ -149,7 +153,7 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Client) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
-		return trace.EmptySpanContext(), err
+		return noTrace, err
 	}
 	remoteContext := tracing.SpanContextFromAnnotations(ctx, m.GetAnnotations())
 	if remoteContext.HasTraceID() {
@@ -159,17 +163,17 @@ func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Cli
 	for _, ownerRef := range m.GetOwnerReferences() {
 		owner, err := getObject(ctx, c, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
 		if err != nil {
-			return trace.EmptySpanContext(), err
+			return noTrace, err
 		}
 		remoteContext, err := spanContextFromObject(ctx, owner, c)
 		if err != nil {
-			return trace.EmptySpanContext(), err
+			return noTrace, err
 		}
 		if remoteContext.HasTraceID() {
 			return remoteContext, nil
 		}
 	}
-	return trace.EmptySpanContext(), nil
+	return noTrace, nil
 }
 
 // SetupWithManager to set up the watcher
