@@ -35,6 +35,8 @@ type EventWatcher struct {
 	Exporter tracesdk.SpanExporter
 
 	recent map[objectReference]recentInfo
+
+	resources map[source]*resource.Resource
 }
 
 // This is how we fetch objects - it's a subset of corev1.ObjectReference
@@ -49,6 +51,12 @@ type objectReference struct {
 type recentInfo struct {
 	trace.SpanContext
 	event *corev1.Event // most recent event
+}
+
+// Info about the source of an event, e.g. kubelet
+type source struct {
+	name     string
+	instance string
 }
 
 var (
@@ -107,7 +115,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Send out a span from the event details
-	span := eventToSpan(remoteContext, &event)
+	span := r.eventToSpan(&event, remoteContext)
 
 	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
 
@@ -120,9 +128,28 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func eventToSpan(remoteContext trace.SpanContext, event *corev1.Event) *tracesdk.SpanData {
+func eventSource(event *corev1.Event) source {
+	if event.Source.Component != "" {
+		return source{
+			name:     event.Source.Component,
+			instance: event.Source.Host,
+		}
+	}
+	return source{
+		name:     event.ReportingController,
+		instance: event.ReportingInstance,
+	}
+}
+
+func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
 	// resource says which component the span is seen as coming from
-	res := resource.New(semconv.ServiceNameKey.String(event.Source.Component)) // TODO: cache these
+	source := eventSource(event)
+	res, found := r.resources[source]
+	if !found {
+		// Make a new resource and cache for later.  TODO: cache eviction
+		res = resource.New(semconv.ServiceNameKey.String(source.name), semconv.ServiceInstanceIDKey.String(source.instance))
+		r.resources[source] = res
+	}
 
 	attrs := []label.KeyValue{
 		label.String("type", event.Type),
@@ -235,6 +262,9 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
 	if r.recent == nil {
 		r.recent = make(map[objectReference]recentInfo)
+	}
+	if r.resources == nil {
+		r.resources = make(map[source]*resource.Resource)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
