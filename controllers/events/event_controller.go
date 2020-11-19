@@ -157,6 +157,7 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		label.String("namespace", event.InvolvedObject.Namespace),
 		label.String("name", event.InvolvedObject.Name),
 		label.String("message", event.Message),
+		label.String("eventID", event.Namespace+"/"+event.Name),
 	}
 
 	// Some events have just an EventTime; if LastTimestamp is present we prefer that.
