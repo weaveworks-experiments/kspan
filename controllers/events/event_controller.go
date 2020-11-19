@@ -132,6 +132,12 @@ func eventToSpan(remoteContext trace.SpanContext, event *corev1.Event) *tracesdk
 		label.String("message", event.Message),
 	}
 
+	// Some events have just an EventTime; if LastTimestamp is present we prefer that.
+	spanTime := event.EventTime.Time
+	if !event.LastTimestamp.Time.IsZero() {
+		spanTime = event.LastTimestamp.Time
+	}
+
 	return &tracesdk.SpanData{
 		SpanContext: trace.SpanContext{
 			TraceID: remoteContext.TraceID,
@@ -140,8 +146,8 @@ func eventToSpan(remoteContext trace.SpanContext, event *corev1.Event) *tracesdk
 		ParentSpanID:    remoteContext.SpanID,
 		SpanKind:        trace.SpanKindInternal,
 		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
-		StartTime:       event.LastTimestamp.Time,
-		EndTime:         event.LastTimestamp.Time,
+		StartTime:       spanTime,
+		EndTime:         spanTime,
 		Attributes:      attrs,
 		HasRemoteParent: true,
 		Resource:        res,
