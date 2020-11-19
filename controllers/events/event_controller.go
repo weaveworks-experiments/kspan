@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,6 +33,22 @@ type EventWatcher struct {
 	client.Client
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
+
+	recent map[objectReference]recentInfo
+}
+
+// This is how we fetch objects - it's a subset of corev1.ObjectReference
+type objectReference struct {
+	APIVersion string
+	Kind       string
+	Namespace  string
+	Name       string
+}
+
+// Info about what happened recently with an object
+type recentInfo struct {
+	trace.SpanContext
+	event *corev1.Event // most recent event
 }
 
 var (
@@ -80,7 +97,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// See if we can map this object to a trace
-	remoteContext, err := spanContextFromObject(ctx, involved, r.Client)
+	remoteContext, err := r.spanContextFromObject(ctx, involved)
 	if err != nil {
 		log.Error(err, "unable to find span")
 		return ctrl.Result{}, nil // nothing else we can do
@@ -93,6 +110,12 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	span := eventToSpan(remoteContext, &event)
 
 	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
+
+	ref := refFromObjRef(event.InvolvedObject)
+	r.recent[ref] = recentInfo{
+		SpanContext: span.SpanContext,
+		event:       &event,
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -114,7 +137,7 @@ func eventToSpan(remoteContext trace.SpanContext, event *corev1.Event) *tracesdk
 			TraceID: remoteContext.TraceID,
 			SpanID:  eventToSpanID(event),
 		},
-		//ParentSpanID:    remoteContext.SpanID,
+		ParentSpanID:    remoteContext.SpanID,
 		SpanKind:        trace.SpanKindInternal,
 		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
 		StartTime:       event.LastTimestamp.Time,
@@ -150,7 +173,29 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 	return obj, err
 }
 
-func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Client) (trace.SpanContext, error) {
+func refFromObjRef(oRef corev1.ObjectReference) objectReference {
+	apiVersion := oRef.APIVersion
+	if apiVersion == "" { // this happens with Node references
+		apiVersion = "v1" // TODO: find a more general solution
+	}
+	return objectReference{
+		APIVersion: apiVersion,
+		Kind:       oRef.Kind,
+		Namespace:  oRef.Namespace,
+		Name:       oRef.Name,
+	}
+}
+
+func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
+	return objectReference{
+		APIVersion: oRef.APIVersion,
+		Kind:       oRef.Kind,
+		Namespace:  namespace,
+		Name:       oRef.Name,
+	}
+}
+
+func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return noTrace, err
@@ -161,11 +206,15 @@ func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Cli
 	}
 	// This object doesn't have a span context; see if one of its owner chain does
 	for _, ownerRef := range m.GetOwnerReferences() {
-		owner, err := getObject(ctx, c, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
+		ref := refFromOwner(ownerRef, m.GetNamespace())
+		if recent, found := r.recent[ref]; found {
+			return recent.SpanContext, nil
+		}
+		owner, err := getObject(ctx, r.Client, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
 		if err != nil {
 			return noTrace, err
 		}
-		remoteContext, err := spanContextFromObject(ctx, owner, c)
+		remoteContext, err := r.spanContextFromObject(ctx, owner)
 		if err != nil {
 			return noTrace, err
 		}
@@ -178,6 +227,9 @@ func spanContextFromObject(ctx context.Context, obj runtime.Object, c client.Cli
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
+	if r.recent == nil {
+		r.recent = make(map[objectReference]recentInfo)
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
 		Complete(r)
