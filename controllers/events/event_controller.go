@@ -39,12 +39,11 @@ type EventWatcher struct {
 	resources map[source]*resource.Resource
 }
 
-// This is how we fetch objects - it's a subset of corev1.ObjectReference
+// This is how we refer to objects - it's a subset of corev1.ObjectReference
 type objectReference struct {
-	APIVersion string
-	Kind       string
-	Namespace  string
-	Name       string
+	Kind      string
+	Namespace string
+	Name      string
 }
 
 // Info about what happened recently with an object
@@ -212,24 +211,18 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 }
 
 func refFromObjRef(oRef corev1.ObjectReference) objectReference {
-	apiVersion := oRef.APIVersion
-	if apiVersion == "" { // this happens with Node references
-		apiVersion = "v1" // TODO: find a more general solution
-	}
 	return objectReference{
-		APIVersion: apiVersion,
-		Kind:       oRef.Kind,
-		Namespace:  oRef.Namespace,
-		Name:       oRef.Name,
+		Kind:      oRef.Kind,
+		Namespace: oRef.Namespace,
+		Name:      oRef.Name,
 	}
 }
 
 func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 	return objectReference{
-		APIVersion: oRef.APIVersion,
-		Kind:       oRef.Kind,
-		Namespace:  namespace,
-		Name:       oRef.Name,
+		Kind:      oRef.Kind,
+		Namespace: namespace,
+		Name:      oRef.Name,
 	}
 }
 
