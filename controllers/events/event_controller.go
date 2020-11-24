@@ -141,15 +141,19 @@ func eventSource(event *corev1.Event) source {
 	}
 }
 
-func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
-	// resource says which component the span is seen as coming from
-	source := eventSource(event)
-	res, found := r.resources[source]
+func (r *EventWatcher) getResource(s source) *resource.Resource {
+	res, found := r.resources[s]
 	if !found {
 		// Make a new resource and cache for later.  TODO: cache eviction
-		res = resource.New(semconv.ServiceNameKey.String(source.name), semconv.ServiceInstanceIDKey.String(source.instance))
-		r.resources[source] = res
+		res = resource.New(semconv.ServiceNameKey.String(s.name), semconv.ServiceInstanceIDKey.String(s.instance))
+		r.resources[s] = res
 	}
+	return res
+}
+
+func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
+	// resource says which component the span is seen as coming from
+	res := r.getResource(eventSource(event))
 
 	attrs := []label.KeyValue{
 		label.String("type", event.Type),
