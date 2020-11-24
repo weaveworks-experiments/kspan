@@ -34,7 +34,8 @@ type EventWatcher struct {
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
 
-	recent map[objectReference]recentInfo
+	recent         map[objectReference]recentInfo
+	recentTopLevel map[objectReference]recentInfo
 
 	resources map[source]*resource.Resource
 }
@@ -226,6 +227,14 @@ func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 	}
 }
 
+func refFromObjectMeta(obj runtime.Object, m v1.Object) objectReference {
+	return objectReference{
+		Kind:      obj.GetObjectKind().GroupVersionKind().Kind,
+		Namespace: m.GetNamespace(),
+		Name:      m.GetName(),
+	}
+}
+
 func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
@@ -253,6 +262,20 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 			return remoteContext, nil
 		}
 	}
+	if len(m.GetOwnerReferences()) == 0 {
+		ref := refFromObjectMeta(obj, m)
+		if recent, found := r.recentTopLevel[ref]; found {
+			return recent.SpanContext, nil
+		}
+		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
+		if err != nil {
+			return noTrace, err
+		}
+		r.recentTopLevel[refFromObjectMeta(obj, m)] = recentInfo{
+			SpanContext: spanData.SpanContext,
+		}
+		return spanData.SpanContext, nil
+	}
 	return noTrace, nil
 }
 
@@ -260,6 +283,9 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
 	if r.recent == nil {
 		r.recent = make(map[objectReference]recentInfo)
+	}
+	if r.recentTopLevel == nil {
+		r.recentTopLevel = make(map[objectReference]recentInfo)
 	}
 	if r.resources == nil {
 		r.resources = make(map[source]*resource.Resource)
