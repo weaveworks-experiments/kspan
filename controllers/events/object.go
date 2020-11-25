@@ -11,10 +11,20 @@ import (
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// This is how we refer to objects - it's a subset of corev1.ObjectReference
+type objectReference struct {
+	Kind      string
+	Namespace string
+	Name      string
+}
 
 // Given an object, come up with some source for the change, and the time it happened
 func getUpdateSource(obj v1.Object) (source string, operation string, ts time.Time) {
@@ -87,4 +97,40 @@ func objectToTraceID(m v1.Object) trace.ID {
 	var h trace.ID
 	_ = f.Sum(h[:0])
 	return h
+}
+
+func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace, name string) (runtime.Object, error) {
+	obj := &unstructured.Unstructured{}
+	if apiVersion == "" { // this happens with Node references
+		apiVersion = "v1" // TODO: find a more general solution
+	}
+	obj.SetAPIVersion(apiVersion)
+	obj.SetKind(kind)
+	key := client.ObjectKey{Namespace: namespace, Name: name}
+	err := c.Get(ctx, key, obj)
+	return obj, err
+}
+
+func refFromObjRef(oRef corev1.ObjectReference) objectReference {
+	return objectReference{
+		Kind:      oRef.Kind,
+		Namespace: oRef.Namespace,
+		Name:      oRef.Name,
+	}
+}
+
+func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
+	return objectReference{
+		Kind:      oRef.Kind,
+		Namespace: namespace,
+		Name:      oRef.Name,
+	}
+}
+
+func refFromObjectMeta(obj runtime.Object, m v1.Object) objectReference {
+	return objectReference{
+		Kind:      obj.GetObjectKind().GroupVersionKind().Kind,
+		Namespace: m.GetNamespace(),
+		Name:      m.GetName(),
+	}
 }

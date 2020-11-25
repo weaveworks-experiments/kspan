@@ -2,26 +2,20 @@ package events
 
 import (
 	"context"
-	"fmt"
-	"hash/fnv"
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/semconv"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
-	"sigs.k8s.io/controller-runtime/pkg/tracing"
 )
 
 var (
@@ -38,13 +32,6 @@ type EventWatcher struct {
 	recentTopLevel map[objectReference]recentInfo
 
 	resources map[source]*resource.Resource
-}
-
-// This is how we refer to objects - it's a subset of corev1.ObjectReference
-type objectReference struct {
-	Kind      string
-	Namespace string
-	Name      string
 }
 
 // Info about what happened recently with an object
@@ -128,19 +115,6 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func eventSource(event *corev1.Event) source {
-	if event.Source.Component != "" {
-		return source{
-			name:     event.Source.Component,
-			instance: event.Source.Host,
-		}
-	}
-	return source{
-		name:     event.ReportingController,
-		instance: event.ReportingInstance,
-	}
-}
-
 func (r *EventWatcher) getResource(s source) *resource.Resource {
 	res, found := r.resources[s]
 	if !found {
@@ -149,90 +123,6 @@ func (r *EventWatcher) getResource(s source) *resource.Resource {
 		r.resources[s] = res
 	}
 	return res
-}
-
-func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
-	// resource says which component the span is seen as coming from
-	res := r.getResource(eventSource(event))
-
-	attrs := []label.KeyValue{
-		label.String("type", event.Type),
-		label.String("kind", event.InvolvedObject.Kind),
-		label.String("namespace", event.InvolvedObject.Namespace),
-		label.String("name", event.InvolvedObject.Name),
-		label.String("message", event.Message),
-		label.String("eventID", event.Namespace+"/"+event.Name),
-	}
-
-	// Some events have just an EventTime; if LastTimestamp is present we prefer that.
-	spanTime := event.EventTime.Time
-	if !event.LastTimestamp.Time.IsZero() {
-		spanTime = event.LastTimestamp.Time
-	}
-
-	return &tracesdk.SpanData{
-		SpanContext: trace.SpanContext{
-			TraceID: remoteContext.TraceID,
-			SpanID:  eventToSpanID(event),
-		},
-		ParentSpanID:    remoteContext.SpanID,
-		SpanKind:        trace.SpanKindInternal,
-		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
-		StartTime:       spanTime,
-		EndTime:         spanTime,
-		Attributes:      attrs,
-		HasRemoteParent: true,
-		Resource:        res,
-		//InstrumentationLibrary instrumentation.Library
-	}
-}
-
-// generate a spanID from an event.  The first time this event is issued has a span ID that can be derived from the event UID
-func eventToSpanID(event *corev1.Event) trace.SpanID {
-	f := fnv.New64a()
-	f.Write([]byte(event.UID))
-	if event.Count > 0 {
-		fmt.Fprint(f, event.Count)
-	}
-	var h trace.SpanID
-	_ = f.Sum(h[:0])
-	return h
-}
-
-func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace, name string) (runtime.Object, error) {
-	obj := &unstructured.Unstructured{}
-	if apiVersion == "" { // this happens with Node references
-		apiVersion = "v1" // TODO: find a more general solution
-	}
-	obj.SetAPIVersion(apiVersion)
-	obj.SetKind(kind)
-	key := client.ObjectKey{Namespace: namespace, Name: name}
-	err := c.Get(ctx, key, obj)
-	return obj, err
-}
-
-func refFromObjRef(oRef corev1.ObjectReference) objectReference {
-	return objectReference{
-		Kind:      oRef.Kind,
-		Namespace: oRef.Namespace,
-		Name:      oRef.Name,
-	}
-}
-
-func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
-	return objectReference{
-		Kind:      oRef.Kind,
-		Namespace: namespace,
-		Name:      oRef.Name,
-	}
-}
-
-func refFromObjectMeta(obj runtime.Object, m v1.Object) objectReference {
-	return objectReference{
-		Kind:      obj.GetObjectKind().GroupVersionKind().Kind,
-		Namespace: m.GetNamespace(),
-		Name:      m.GetName(),
-	}
 }
 
 func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
