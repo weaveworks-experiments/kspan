@@ -45,7 +45,7 @@ func getUpdateSource(obj v1.Object) (source string, operation string, ts time.Ti
 		return source, operation, ts
 	}
 	// TODO: try some other ways
-	return "unknown", "unknown", time.Now()
+	return "unknown", "unknown", ts
 }
 
 // If we reach an object with no owner and no recent events, start a new trace.
@@ -58,6 +58,10 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 
 	updateSource, operation, updateTime := getUpdateSource(m)
 	res := r.getResource(source{name: updateSource})
+
+	if updateTime.IsZero() { // We didn't find a time in the object
+		updateTime = time.Now() // TODO: can we use the time of the event that triggered this instead?
+	}
 
 	attrs := []label.KeyValue{
 		label.String("namespace", m.GetNamespace()),
