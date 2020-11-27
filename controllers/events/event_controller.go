@@ -81,38 +81,47 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
+	err := r.handleEvent(ctx, log, &event)
+	if err != nil {
+		log.Error(err, "unable to handle event")
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *corev1.Event) error {
 	// Find which object the Event relates to
 	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, event.InvolvedObject.Kind, event.InvolvedObject.Namespace, event.InvolvedObject.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrl.Result{}, nil // again, happens so often it's not worth logging
+			return nil // again, happens so often it's not worth logging
 		}
-		log.Error(err, "unable to fetch involved object")
-		return ctrl.Result{}, nil
+		return err
 	}
 
 	// See if we can map this object to a trace
 	remoteContext, err := r.spanContextFromObject(ctx, involved)
 	if err != nil {
-		log.Error(err, "unable to find span")
-		return ctrl.Result{}, nil // nothing else we can do
+		return err
 	}
 	if !remoteContext.HasTraceID() {
-		return ctrl.Result{}, nil // no parent context found; don't create a span for this event
+		return nil // no parent context found; don't create a span for this event
 	}
 
 	// Send out a span from the event details
-	span := r.eventToSpan(&event, remoteContext)
-
-	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
-
+	span := r.eventToSpan(event, remoteContext)
 	ref := refFromObjRef(event.InvolvedObject)
+	r.emitSpan(ctx, span)
 	r.recent[ref] = recentInfo{
 		SpanContext: span.SpanContext,
-		event:       &event,
 	}
 
-	return ctrl.Result{}, nil
+	return nil
+	}
+
+func (r *EventWatcher) emitSpan(ctx context.Context, span *tracesdk.SpanData) {
+	// TODO: consider building up all the spans then sending in one go
+	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
 }
 
 func (r *EventWatcher) getResource(s source) *resource.Resource {
@@ -161,6 +170,7 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 		if err != nil {
 			return noTrace, err
 		}
+		r.emitSpan(ctx, spanData)
 		r.recentTopLevel[refFromObjectMeta(obj, m)] = recentInfo{
 			SpanContext: spanData.SpanContext,
 		}
@@ -169,16 +179,16 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 	return noTrace, nil
 }
 
+func (r *EventWatcher) initialize() {
+	r.recent = make(map[objectReference]recentInfo)
+	r.recentTopLevel = make(map[objectReference]recentInfo)
+	r.resources = make(map[source]*resource.Resource)
+}
+
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
 	if r.recent == nil {
-		r.recent = make(map[objectReference]recentInfo)
-	}
-	if r.recentTopLevel == nil {
-		r.recentTopLevel = make(map[objectReference]recentInfo)
-	}
-	if r.resources == nil {
-		r.resources = make(map[source]*resource.Resource)
+		r.initialize()
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
