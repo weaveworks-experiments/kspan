@@ -21,24 +21,36 @@ func TestDeploymentRollout(t *testing.T) {
 	mustParse(t, replicaSet2str, &rs2)
 	mustParse(t, pod1str, &pod1)
 
-	ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
-
-	for _, eventStr := range deploymentUpdateEvents {
-		var event corev1.Event
-		mustParse(t, eventStr, &event)
-		g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+	tests := []struct {
+		name       string
+		perm       []int
+		wantTraces []string
+	}{
+		{
+			name: "scaledown-later",
+			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8},
+			wantTraces: []string{
+				"0: kubectl Deployment.Update ",
+				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
+				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
+				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
+				"4: kubelet Pod.Pulled (2) Container image \"nginx:1.19.2-alpine\" already present on machine",
+				"5: kubelet Pod.Created (2) Created container hello-world",
+				"6: kubelet Pod.Started (2) Started container hello-world",
+				"7: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
+			},
+		},
 	}
-	expectedTraces := []string{
-		"0: kubectl Deployment.Update ",
-		"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
-		"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
-		"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
-		"4: kubelet Pod.Pulled (2) Container image \"nginx:1.19.2-alpine\" already present on machine",
-		"5: kubelet Pod.Created (2) Created container hello-world",
-		"6: kubelet Pod.Started (2) Started container hello-world",
-		"7: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
-		"8: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
+			for _, index := range tt.perm {
+				var event corev1.Event
+				mustParse(t, deploymentUpdateEvents[index], &event)
+				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+			}
+			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
+		})
 	}
-	g.Expect(exporter.dump()).To(o.Equal(expectedTraces))
-
 }
