@@ -29,7 +29,7 @@ type EventWatcher struct {
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
 
-	recent map[parentChild]recentInfo
+	recent recentInfoStore
 
 	resources map[source]*resource.Resource
 }
@@ -41,12 +41,6 @@ type parentChild struct {
 
 func (p parentChild) String() string {
 	return fmt.Sprintf("parent: %s, child: %s", p.parent, p.child) // TODO improve this
-}
-
-// Info about what happened recently with an object
-type recentInfo struct {
-	trace.SpanContext
-	event *corev1.Event // most recent event
 }
 
 // Info about the source of an event, e.g. kubelet
@@ -125,9 +119,7 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 	// Send out a span from the event details
 	span := r.eventToSpan(event, remoteContext)
 	r.emitSpan(ctx, span)
-	r.recent[ref] = recentInfo{
-		SpanContext: span.SpanContext,
-	}
+	r.recent.store(ref, span.SpanContext)
 
 	return nil
 	}
@@ -162,13 +154,12 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 			parent: refFromOwner(ownerRef, m.GetNamespace()),
 			child:  refFromObjectMeta(obj, m),
 		}
-		if recent, found := r.recent[ref]; found {
-			return recent.SpanContext, nil
+		if spanContext, found := r.recent.lookupSpanContext(ref); found {
+			return spanContext, nil
 		}
 		// Try the parent on its own
-		ref = parentChild{parent: ref.parent}
-		if recent, found := r.recent[ref]; found {
-			return recent.SpanContext, nil
+		if spanContext, found := r.recent.lookupSpanContext(parentChild{parent: ref.parent}); found {
+			return spanContext, nil
 		}
 		owner, err := getObject(ctx, r.Client, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
 		if err != nil {
@@ -186,32 +177,28 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 		ref := parentChild{ // parent is blank
 			child: refFromObjectMeta(obj, m),
 		}
-		if recent, found := r.recent[ref]; found {
-			return recent.SpanContext, nil
+		if spanContext, found := r.recent.lookupSpanContext(ref); found {
+			return spanContext, nil
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
 		if err != nil {
 			return noTrace, err
 		}
 		r.emitSpan(ctx, spanData)
-		r.recent[ref] = recentInfo{
-			SpanContext: spanData.SpanContext,
-		}
+		r.recent.store(ref, spanData.SpanContext)
 		return spanData.SpanContext, nil
 	}
 	return noTrace, nil
 }
 
 func (r *EventWatcher) initialize() {
-	r.recent = make(map[parentChild]recentInfo)
+	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
 }
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
-	if r.recent == nil {
 		r.initialize()
-	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
 		Complete(r)
