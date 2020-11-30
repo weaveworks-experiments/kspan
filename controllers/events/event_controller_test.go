@@ -41,6 +41,21 @@ func TestDeploymentRollout(t *testing.T) {
 				"8: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
 			},
 		},
+		{
+			name: "scaledown-earlier",
+			perm: []int{0, 6, 1, 2, 3, 4, 5, 7, 8},
+			wantTraces: []string{
+				"0: kubectl Deployment.Update ",
+				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
+				"2: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
+				"3: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
+				"4: default-scheduler Pod.Scheduled (3) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
+				"5: kubelet Pod.Pulled (3) Container image \"nginx:1.19.2-alpine\" already present on machine",
+				"6: kubelet Pod.Created (3) Created container hello-world",
+				"7: kubelet Pod.Started (3) Started container hello-world",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (2) Deleted pod: hello-world-7ff854f459-kl4hq",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

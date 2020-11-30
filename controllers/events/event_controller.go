@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,10 +29,18 @@ type EventWatcher struct {
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
 
-	recent         map[objectReference]recentInfo
-	recentTopLevel map[objectReference]recentInfo
+	recent map[parentChild]recentInfo
 
 	resources map[source]*resource.Resource
+}
+
+type parentChild struct {
+	parent objectReference
+	child  objectReference
+}
+
+func (p parentChild) String() string {
+	return fmt.Sprintf("parent: %s, child: %s", p.parent, p.child) // TODO improve this
 }
 
 // Info about what happened recently with an object
@@ -90,8 +99,13 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *corev1.Event) error {
+	ref := parentChildFromEvent(event)
 	// Find which object the Event relates to
-	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, event.InvolvedObject.Kind, event.InvolvedObject.Namespace, event.InvolvedObject.Name)
+	objRef := ref.child
+	if objRef.blank() {
+		objRef = ref.parent
+	}
+	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil // again, happens so often it's not worth logging
@@ -110,7 +124,6 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 
 	// Send out a span from the event details
 	span := r.eventToSpan(event, remoteContext)
-	ref := refFromObjRef(event.InvolvedObject)
 	r.emitSpan(ctx, span)
 	r.recent[ref] = recentInfo{
 		SpanContext: span.SpanContext,
@@ -145,7 +158,15 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 	}
 	// This object doesn't have a span context; see if one of its owner chain does
 	for _, ownerRef := range m.GetOwnerReferences() {
-		ref := refFromOwner(ownerRef, m.GetNamespace())
+		ref := parentChild{
+			parent: refFromOwner(ownerRef, m.GetNamespace()),
+			child:  refFromObjectMeta(obj, m),
+		}
+		if recent, found := r.recent[ref]; found {
+			return recent.SpanContext, nil
+		}
+		// Try the parent on its own
+		ref = parentChild{parent: ref.parent}
 		if recent, found := r.recent[ref]; found {
 			return recent.SpanContext, nil
 		}
@@ -162,8 +183,10 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 		}
 	}
 	if len(m.GetOwnerReferences()) == 0 {
-		ref := refFromObjectMeta(obj, m)
-		if recent, found := r.recentTopLevel[ref]; found {
+		ref := parentChild{ // parent is blank
+			child: refFromObjectMeta(obj, m),
+		}
+		if recent, found := r.recent[ref]; found {
 			return recent.SpanContext, nil
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
@@ -171,7 +194,7 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 			return noTrace, err
 		}
 		r.emitSpan(ctx, spanData)
-		r.recentTopLevel[refFromObjectMeta(obj, m)] = recentInfo{
+		r.recent[ref] = recentInfo{
 			SpanContext: spanData.SpanContext,
 		}
 		return spanData.SpanContext, nil
@@ -180,8 +203,7 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 }
 
 func (r *EventWatcher) initialize() {
-	r.recent = make(map[objectReference]recentInfo)
-	r.recentTopLevel = make(map[objectReference]recentInfo)
+	r.recent = make(map[parentChild]recentInfo)
 	r.resources = make(map[source]*resource.Resource)
 }
 

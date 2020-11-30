@@ -3,12 +3,40 @@ package events
 import (
 	"fmt"
 	"hash/fnv"
+	"strings"
 
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	corev1 "k8s.io/api/core/v1"
 )
+
+// Get the object relating to an event, after applying some heuristics
+func parentChildFromEvent(event *corev1.Event) parentChild {
+	ret := parentChild{
+		parent: refFromObjRef(event.InvolvedObject),
+	}
+
+	switch {
+	case event.Source.Component == "deployment-controller" && event.InvolvedObject.Kind == "Deployment":
+		// if we have a message like "Scaled down replica set foobar-7ff854f459 to 0"; extract the ReplicaSet name
+		marker := "replica set "
+		pos := strings.Index(event.Message, marker)
+		if pos == -1 {
+			break
+		}
+		pos += len(marker)
+		end := strings.IndexByte(event.Message[pos:], ' ')
+		if end == -1 {
+			break
+		}
+		ret.child.Kind = "ReplicaSet"
+		ret.child.Namespace = ret.parent.Namespace
+		ret.child.Name = event.Message[pos : pos+end]
+	}
+
+	return ret
+}
 
 func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
 	// resource says which component the span is seen as coming from
