@@ -899,3 +899,55 @@ status:
   phase: Pending
   qosClass: BestEffort
 `
+
+var pod0str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2020-11-27T10:04:05Z"
+  generateName: hello-world-7ff854f459-
+  labels:
+    name: hello-world
+    pod-template-hash: 7ff854f459
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:name: {}
+          f:pod-template-hash: {}
+      f:spec:
+        f:containers:
+          k:{"name":"hello-world"}:
+            .: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2020-11-27T10:04:05Z"
+  name: hello-world-7ff854f459-kl4hq
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: hello-world-7ff854f459
+    uid: a031073d-040f-4800-aeb7-cc198183b479
+  resourceVersion: "649438"
+  selfLink: /api/v1/namespaces/default/pods/hello-world-7ff854f459-kl4hq
+  uid: deb2b4f7-e312-44dd-bd06-7c00d0f5695b
+spec:
+  containers:
+  - image: nginx:1.19.1-alpine
+    imagePullPolicy: IfNotPresent
+    name: hello-world
+    ports:
+    - containerPort: 80
+      protocol: TCP
+status:
+  phase: Pending
+  qosClass: BestEffort
+`
+
