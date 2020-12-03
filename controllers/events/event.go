@@ -12,7 +12,12 @@ import (
 )
 
 // Get the object relating to an event, after applying some heuristics
+// or a blank struct if this can't be done
 func parentChildFromEvent(event *corev1.Event) parentChild {
+	if event.InvolvedObject.Name == "" {
+		return parentChild{}
+	}
+
 	ret := parentChild{
 		parent: refFromObjRef(event.InvolvedObject),
 	}

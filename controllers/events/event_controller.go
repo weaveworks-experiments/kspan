@@ -99,6 +99,9 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 	if objRef.blank() {
 		objRef = ref.parent
 	}
+	if objRef.blank() {
+		return fmt.Errorf("No involved object")
+	}
 	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
