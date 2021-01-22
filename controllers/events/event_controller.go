@@ -125,7 +125,7 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 	r.recent.store(ref, span.SpanContext)
 
 	return nil
-	}
+}
 
 func (r *EventWatcher) emitSpan(ctx context.Context, span *tracesdk.SpanData) {
 	// TODO: consider building up all the spans then sending in one go
@@ -201,7 +201,7 @@ func (r *EventWatcher) initialize() {
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
-		r.initialize()
+	r.initialize()
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
 		Complete(r)
