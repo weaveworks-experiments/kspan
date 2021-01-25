@@ -118,13 +118,22 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 		return err
 	}
 
+	var remoteContext trace.SpanContext
+
+	// Special case: A flux sync event can be the top level trigger
+	if event.Source.Component == "flux" && event.Reason == "Sync" {
+		m, _ := meta.Accessor(involved)
+		remoteContext.TraceID = objectToTraceID(m)
+		ref = parentChild{child: refFromObjectMeta(involved, m)}
+	} else {
 	// See if we can map this object to a trace
-	remoteContext, err := r.spanContextFromObject(ctx, involved)
+		remoteContext, err = r.spanContextFromObject(ctx, involved)
 	if err != nil {
 		return err
 	}
 	if !remoteContext.HasTraceID() {
 		return nil // no parent context found; don't create a span for this event
+	}
 	}
 
 	// Send out a span from the event details
