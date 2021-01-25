@@ -92,6 +92,14 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
+func isNotFound(err error) bool {
+	var unwrapped apierrors.APIStatus
+	if errors.As(err, &unwrapped) {
+		return apierrors.IsNotFound(unwrapped.(error))
+	}
+	return apierrors.IsNotFound(err)
+}
+
 func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *corev1.Event) error {
 	ref := parentChildFromEvent(event)
 	// Find which object the Event relates to
@@ -104,7 +112,7 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 	}
 	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
 	if err != nil {
-		if apierrors.IsNotFound(err) {
+		if isNotFound(err) {
 			return nil // again, happens so often it's not worth logging
 		}
 		return err

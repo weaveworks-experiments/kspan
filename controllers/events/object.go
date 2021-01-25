@@ -121,7 +121,7 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 	obj.SetKind(kind)
 	key := client.ObjectKey{Namespace: namespace, Name: name}
 	err := c.Get(ctx, key, obj)
-	return obj, err
+	return obj, errors.Wrap(err, "unable to get object")
 }
 
 // canonicalise strings via lowercase - we see "deployment" vs "Deployment"
