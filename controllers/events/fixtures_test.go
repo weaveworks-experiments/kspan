@@ -7,6 +7,7 @@ import (
 )
 
 func mustParse(t *testing.T, str string, obj interface{}) {
+	t.Helper()
 	err := yaml.Unmarshal([]byte(str), obj)
 	if err != nil {
 		t.Fatal("Failed to parse test object", str, err)
