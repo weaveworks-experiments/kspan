@@ -35,9 +35,9 @@ func parentChildFromEvent(event *corev1.Event) parentChild {
 		if end == -1 {
 			break
 		}
-		ret.child.Kind = "ReplicaSet"
-		ret.child.Namespace = ret.parent.Namespace
-		ret.child.Name = event.Message[pos : pos+end]
+		ret.child.Kind = "replicaset"
+		ret.child.Namespace = lc(ret.parent.Namespace)
+		ret.child.Name = lc(event.Message[pos : pos+end])
 	}
 
 	return ret

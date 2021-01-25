@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/api/trace"
@@ -123,26 +124,31 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 	return obj, err
 }
 
+// canonicalise strings via lowercase - we see "deployment" vs "Deployment"
+func lc(s string) string {
+	return strings.ToLower(s)
+}
+
 func refFromObjRef(oRef corev1.ObjectReference) objectReference {
 	return objectReference{
-		Kind:      oRef.Kind,
-		Namespace: oRef.Namespace,
-		Name:      oRef.Name,
+		Kind:      lc(oRef.Kind),
+		Namespace: lc(oRef.Namespace),
+		Name:      lc(oRef.Name),
 	}
 }
 
 func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 	return objectReference{
-		Kind:      oRef.Kind,
-		Namespace: namespace,
-		Name:      oRef.Name,
+		Kind:      lc(oRef.Kind),
+		Namespace: lc(namespace),
+		Name:      lc(oRef.Name),
 	}
 }
 
 func refFromObjectMeta(obj runtime.Object, m v1.Object) objectReference {
 	return objectReference{
-		Kind:      obj.GetObjectKind().GroupVersionKind().Kind,
-		Namespace: m.GetNamespace(),
-		Name:      m.GetName(),
+		Kind:      lc(obj.GetObjectKind().GroupVersionKind().Kind),
+		Namespace: lc(m.GetNamespace()),
+		Name:      lc(m.GetName()),
 	}
 }
