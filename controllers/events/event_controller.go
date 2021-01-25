@@ -165,11 +165,6 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 	if err != nil {
 		return noTrace, err
 	}
-	remoteContext := tracing.SpanContextFromAnnotations(ctx, m.GetAnnotations())
-	if remoteContext.HasTraceID() {
-		return remoteContext, nil
-	}
-	// This object doesn't have a span context; see if one of its owner chain does
 	for _, ownerRef := range m.GetOwnerReferences() {
 		ref := parentChild{
 			parent: refFromOwner(ownerRef, m.GetNamespace()),
