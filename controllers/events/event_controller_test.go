@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestDeploymentRollout(t *testing.T) {
+func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 	g := o.NewWithT(t)
 
 	var (
@@ -66,6 +66,54 @@ func TestDeploymentRollout(t *testing.T) {
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, deploymentUpdateEvents[index], &event)
+				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+			}
+			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
+		})
+	}
+}
+
+func TestDeploymentRolloutFromFlux(t *testing.T) {
+	g := o.NewWithT(t)
+
+	var (
+		deploy1  unstructured.Unstructured
+		rs1, rs2 unstructured.Unstructured
+		pod1     unstructured.Unstructured
+	)
+	mustParse(t, fluxDeploymentStr, &deploy1)
+	mustParse(t, fluxReplicaSet1astr, &rs1)
+	mustParse(t, fluxReplicaSet1bstr, &rs2)
+	mustParse(t, fluxPod1astr, &pod1)
+
+	tests := []struct {
+		name       string
+		perm       []int
+		wantTraces []string
+	}{
+		{
+			name: "flux-event-first",
+			perm: []int{3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10},
+			wantTraces: []string{
+				"0: flux deployment.Sync Commit e332e7bac962: Update nginx",
+				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-f77b4f6c8 to 1",
+				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-f77b4f6c8-6tcj2",
+				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-f77b4f6c8-6tcj2 to node2",
+				"4: kubelet Pod.Pulling (2) Pulling image \"nginx:1.19.3-alpine\"",
+				"5: kubelet Pod.Pulled (2) Successfully pulled image \"nginx:1.19.3-alpine\"",
+				"6: kubelet Pod.Created (2) Created container hello-world",
+				"7: kubelet Pod.Started (2) Started container hello-world",
+				"8: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-779cbf9f67 to 0",
+				"9: replicaset-controller ReplicaSet.SuccessfulDelete (8) Deleted pod: hello-world-779cbf9f67-nbwfm",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
+			for _, index := range tt.perm {
+				var event corev1.Event
+				mustParse(t, fluxDeploymentUpdateEvents[index], &event)
 				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
 			}
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
