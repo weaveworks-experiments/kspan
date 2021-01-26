@@ -160,11 +160,21 @@ func (r *EventWatcher) getResource(s source) *resource.Resource {
 	return res
 }
 
-func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
+func (r *EventWatcher) recentSpanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return noTrace, err
 	}
+	// If no owners, this is a top-level object
+	if len(m.GetOwnerReferences()) == 0 {
+		ref := parentChild{ // parent is blank
+			child: refFromObjectMeta(obj, m),
+		}
+		if spanContext, found := r.recent.lookupSpanContext(ref); found {
+			return spanContext, nil
+		}
+	}
+	// See if we have any recent event for an owner
 	for _, ownerRef := range m.GetOwnerReferences() {
 		ref := parentChild{
 			parent: refFromOwner(ownerRef, m.GetNamespace()),
@@ -177,6 +187,22 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 		if spanContext, found := r.recent.lookupSpanContext(parentChild{parent: ref.parent}); found {
 			return spanContext, nil
 		}
+	}
+	return noTrace, err
+}
+
+func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
+	// See if we have any recent relevant event
+	if sc, err := r.recentSpanContextFromObject(ctx, obj); err != nil || sc.HasTraceID() {
+		return sc, err
+	}
+
+	m, err := meta.Accessor(obj)
+	if err != nil {
+		return noTrace, err
+	}
+	// If no recent event, recurse over owners
+	for _, ownerRef := range m.GetOwnerReferences() {
 		owner, err := getObject(ctx, r.Client, ownerRef.APIVersion, ownerRef.Kind, m.GetNamespace(), ownerRef.Name)
 		if err != nil {
 			return noTrace, err
@@ -189,12 +215,10 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 			return remoteContext, nil
 		}
 	}
+	// If no owners and no recent data, create a span based off this top-level object
 	if len(m.GetOwnerReferences()) == 0 {
 		ref := parentChild{ // parent is blank
 			child: refFromObjectMeta(obj, m),
-		}
-		if spanContext, found := r.recent.lookupSpanContext(ref); found {
-			return spanContext, nil
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
 		if err != nil {
