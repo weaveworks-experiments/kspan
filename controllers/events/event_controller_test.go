@@ -92,8 +92,8 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 		wantTraces []string
 	}{
 		{
-			name: "flux-event-first",
-			perm: []int{3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10},
+			name: "flux-event-later",
+			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			wantTraces: []string{
 				"0: flux deployment.Sync Commit e332e7bac962: Update nginx",
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-f77b4f6c8 to 1",
