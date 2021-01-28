@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
@@ -29,6 +30,7 @@ type EventWatcher struct {
 	client.Client
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
+	ticker   *time.Ticker
 
 	recent recentInfoStore
 
@@ -255,9 +257,26 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 	return noTrace, nil
 }
 
+func (r *EventWatcher) runTicker() {
+	// Need to check more often than the window, otherwise things will be too old.
+	r.ticker = time.NewTicker(r.recent.recentWindow / 2)
+	for range r.ticker.C {
+		err := r.checkOlderPending(context.Background(), time.Now().Add(-r.recent.recentWindow))
+		if err != nil {
+			r.Log.Error(err, "from checkOlderPending")
+		}
+		r.recent.expire()
+	}
+}
+
 func (r *EventWatcher) initialize() {
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
+	go r.runTicker()
+}
+
+func (r *EventWatcher) stop() {
+	r.ticker.Stop()
 }
 
 // SetupWithManager to set up the watcher
