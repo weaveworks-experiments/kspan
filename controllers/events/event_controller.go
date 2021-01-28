@@ -160,7 +160,7 @@ func (r *EventWatcher) getResource(s source) *resource.Resource {
 	return res
 }
 
-func (r *EventWatcher) recentSpanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
+func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent *recentInfoStore) (trace.SpanContext, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return noTrace, err
@@ -170,7 +170,7 @@ func (r *EventWatcher) recentSpanContextFromObject(ctx context.Context, obj runt
 		ref := parentChild{ // parent is blank
 			child: refFromObjectMeta(obj, m),
 		}
-		if spanContext, found := r.recent.lookupSpanContext(ref); found {
+		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
 		}
 	}
@@ -180,11 +180,11 @@ func (r *EventWatcher) recentSpanContextFromObject(ctx context.Context, obj runt
 			parent: refFromOwner(ownerRef, m.GetNamespace()),
 			child:  refFromObjectMeta(obj, m),
 		}
-		if spanContext, found := r.recent.lookupSpanContext(ref); found {
+		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
 		}
 		// Try the parent on its own
-		if spanContext, found := r.recent.lookupSpanContext(parentChild{parent: ref.parent}); found {
+		if spanContext, found := recent.lookupSpanContext(parentChild{parent: ref.parent}); found {
 			return spanContext, nil
 		}
 	}
