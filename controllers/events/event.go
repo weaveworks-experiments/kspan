@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -56,12 +57,6 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		label.String("eventID", event.Namespace+"/"+event.Name),
 	}
 
-	// Some events have just an EventTime; if LastTimestamp is present we prefer that.
-	spanTime := event.EventTime.Time
-	if !event.LastTimestamp.Time.IsZero() {
-		spanTime = event.LastTimestamp.Time
-	}
-
 	return &tracesdk.SpanData{
 		SpanContext: trace.SpanContext{
 			TraceID: remoteContext.TraceID,
@@ -70,8 +65,8 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		ParentSpanID:    remoteContext.SpanID,
 		SpanKind:        trace.SpanKindInternal,
 		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
-		StartTime:       spanTime,
-		EndTime:         spanTime,
+		StartTime:       eventTime(event),
+		EndTime:         eventTime(event),
 		Attributes:      attrs,
 		HasRemoteParent: true,
 		Resource:        res,
@@ -89,6 +84,14 @@ func eventToSpanID(event *corev1.Event) trace.SpanID {
 	var h trace.SpanID
 	_ = f.Sum(h[:0])
 	return h
+}
+
+// Some events have just an EventTime; if LastTimestamp is present we prefer that.
+func eventTime(event *corev1.Event) time.Time {
+	if !event.LastTimestamp.Time.IsZero() {
+		return event.LastTimestamp.Time
+	}
+	return event.EventTime.Time
 }
 
 func eventSource(event *corev1.Event) source {
