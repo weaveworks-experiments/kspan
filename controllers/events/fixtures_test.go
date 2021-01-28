@@ -168,6 +168,9 @@ spec:
         image: k8s.gcr.io/coredns:1.7.0
 `
 
+// 2 seconds after the last event time
+const deploymentUpdateEventsThresholdStr = "2020-11-27T12:04:08Z"
+
 // Events from a Deployment update from one version to another
 var deploymentUpdateEvents = []string{`
 apiVersion: v1

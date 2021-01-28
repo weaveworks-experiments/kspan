@@ -2,6 +2,7 @@ package events
 
 import (
 	"testing"
+	"time"
 
 	o "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -21,6 +22,8 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 	mustParse(t, replicaSet2str, &rs2)
 	mustParse(t, pod0str, &pod0)
 	mustParse(t, pod1str, &pod1)
+
+	// There is no 'top-level' event here; the controller must synthesise one from the managed fields of the Deployment.
 
 	tests := []struct {
 		name       string
@@ -60,14 +63,20 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 			},
 		},
 	}
+
+	threshold, err := time.Parse(time.RFC3339, deploymentUpdateEventsThresholdStr)
+	g.Expect(err).NotTo(o.HaveOccurred())
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod0, &pod1)
+			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, deploymentUpdateEvents[index], &event)
 				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
 			}
+			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
 	}
@@ -111,6 +120,7 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
+			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, fluxDeploymentUpdateEvents[index], &event)
