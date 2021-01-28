@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -10,17 +11,20 @@ import (
 	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Get the object relating to an event, after applying some heuristics
 // or a blank struct if this can't be done
-func parentChildFromEvent(event *corev1.Event) parentChild {
+func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, parentChild, error) {
 	if event.InvolvedObject.Name == "" {
-		return parentChild{}
+		return nil, parentChild{}, fmt.Errorf("No involved object")
 	}
 
+	objRef := refFromObjRef(event.InvolvedObject)
 	ret := parentChild{
-		parent: refFromObjRef(event.InvolvedObject),
+		parent: objRef,
 	}
 
 	switch {
@@ -39,9 +43,11 @@ func parentChildFromEvent(event *corev1.Event) parentChild {
 		ret.child.Kind = "replicaset"
 		ret.child.Namespace = lc(ret.parent.Namespace)
 		ret.child.Name = lc(event.Message[pos : pos+end])
+		objRef = ret.child
 	}
 
-	return ret
+	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
+	return involved, ret, err
 }
 
 func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {

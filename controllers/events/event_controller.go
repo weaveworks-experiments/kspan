@@ -32,6 +32,8 @@ type EventWatcher struct {
 
 	recent recentInfoStore
 
+	pending []*corev1.Event
+
 	resources map[source]*resource.Resource
 }
 
@@ -101,40 +103,62 @@ func isNotFound(err error) bool {
 	return apierrors.IsNotFound(err)
 }
 
+// handleEvent is the meat of Reconcile, broken out for ease of testing.
 func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *corev1.Event) error {
-	ref := parentChildFromEvent(event)
-	// Find which object the Event relates to
-	objRef := ref.child
-	if objRef.blank() {
-		objRef = ref.parent
-	}
-	if objRef.blank() {
-		return fmt.Errorf("No involved object")
-	}
-	involved, err := getObject(ctx, r.Client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
+	log.Info("event", "kind", event.InvolvedObject.Kind, "reason", event.Reason, "source", event.Source.Component)
+
+	emitted, err := r.emitSpanFromEvent(ctx, log, event)
 	if err != nil {
-		if isNotFound(err) {
-			return nil // again, happens so often it's not worth logging
+		if isNotFound(err) { // can't find something - suppress reporting because this happens often
+			err = nil
 		}
 		return err
 	}
+	if emitted { // a new span may allow us to map one that was saved from earlier
+		err := r.checkPending(ctx)
+		if err != nil && !isNotFound(err) {
+			log.Error(err, "while checking pending events")
+		}
+	} else {
+		// keep this event pending for a bit, see if something shows up that will let us map it.
+		r.pending = append(r.pending, event) // TODO: locking
+	}
+	return nil
+}
 
-	var remoteContext trace.SpanContext
-
+// If our rules tell us to map this event immediately to a context, do that.
+func mapEventDirectlyToContext(ctx context.Context, client client.Client, event *corev1.Event, involved runtime.Object) (success bool, remoteContext trace.SpanContext, err error) {
 	// Special case: A flux sync event can be the top level trigger
 	if event.Source.Component == "flux" && event.Reason == "Sync" {
 		m, _ := meta.Accessor(involved)
 		remoteContext.TraceID = objectToTraceID(m)
-		ref = parentChild{child: refFromObjectMeta(involved, m)}
-	} else {
-	// See if we can map this object to a trace
-		remoteContext, err = r.spanContextFromObject(ctx, involved)
+		success = true
+	}
+	return
+}
+
+// attempt to map an Event to one or more Spans; return true if a Span was emitted
+func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, event *corev1.Event) (bool, error) {
+	involved, ref, err := objectFromEvent(ctx, r.Client, event)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if !remoteContext.HasTraceID() {
-		return nil // no parent context found; don't create a span for this event
+
+	// If our rules tell us to map this event immediately to a context, do that.
+	success, remoteContext, err := mapEventDirectlyToContext(ctx, r.Client, event, involved)
+	if err != nil {
+		return false, err
 	}
+	if !success {
+		// If the involved object (or its owner) maps to recent activity, make a span parented off that.
+		remoteContext, err = recentSpanContextFromObject(ctx, involved, &r.recent)
+	if err != nil {
+			return false, err
+	}
+		success = remoteContext.HasTraceID()
+	}
+	if !success {
+		return false, nil
 	}
 
 	// Send out a span from the event details
@@ -142,7 +166,7 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 	r.emitSpan(ctx, span)
 	r.recent.store(ref, span.SpanContext)
 
-	return nil
+	return true, nil
 }
 
 func (r *EventWatcher) emitSpan(ctx context.Context, span *tracesdk.SpanData) {
@@ -191,9 +215,9 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	return noTrace, err
 }
 
-func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
+func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
 	// See if we have any recent relevant event
-	if sc, err := r.recentSpanContextFromObject(ctx, obj); err != nil || sc.HasTraceID() {
+	if sc, err := recentSpanContextFromObject(ctx, obj, &r.recent); err != nil || sc.HasTraceID() {
 		return sc, err
 	}
 
@@ -207,7 +231,7 @@ func (r *EventWatcher) spanContextFromObject(ctx context.Context, obj runtime.Ob
 		if err != nil {
 			return noTrace, err
 		}
-		remoteContext, err := r.spanContextFromObject(ctx, owner)
+		remoteContext, err := r.makeSpanContextFromObject(ctx, owner)
 		if err != nil {
 			return noTrace, err
 		}
