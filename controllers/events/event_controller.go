@@ -192,7 +192,7 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	// If no owners, this is a top-level object
 	if len(m.GetOwnerReferences()) == 0 {
 		ref := parentChild{ // parent is blank
-			child: refFromObjectMeta(obj, m),
+			child: refFromObject(m),
 		}
 		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
@@ -202,7 +202,7 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	for _, ownerRef := range m.GetOwnerReferences() {
 		ref := parentChild{
 			parent: refFromOwner(ownerRef, m.GetNamespace()),
-			child:  refFromObjectMeta(obj, m),
+			child:  refFromObject(m),
 		}
 		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
@@ -242,7 +242,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 	// If no owners and no recent data, create a span based off this top-level object
 	if len(m.GetOwnerReferences()) == 0 {
 		ref := parentChild{ // parent is blank
-			child: refFromObjectMeta(obj, m),
+			child: refFromObject(m),
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
 		if err != nil {

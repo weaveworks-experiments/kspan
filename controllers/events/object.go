@@ -146,10 +146,11 @@ func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 	}
 }
 
-func refFromObjectMeta(obj runtime.Object, m v1.Object) objectReference {
+func refFromObject(obj v1.Object) objectReference {
+	ty := obj.(v1.Type)
 	return objectReference{
-		Kind:      lc(obj.GetObjectKind().GroupVersionKind().Kind),
-		Namespace: lc(m.GetNamespace()),
-		Name:      lc(m.GetName()),
+		Kind:      lc(ty.GetKind()),
+		Namespace: lc(obj.GetNamespace()),
+		Name:      lc(obj.GetName()),
 	}
 }
