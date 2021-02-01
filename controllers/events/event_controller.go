@@ -276,7 +276,9 @@ func (r *EventWatcher) initialize() {
 }
 
 func (r *EventWatcher) stop() {
+	if r.ticker != nil {
 	r.ticker.Stop()
+}
 }
 
 // SetupWithManager to set up the watcher
