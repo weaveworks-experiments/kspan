@@ -234,7 +234,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 	// If no owners and no recent data, create a span based off this top-level object
 	if len(m.GetOwnerReferences()) == 0 {
 		ref := actionReference{
-			actor: refFromObject(m),
+			object: refFromObject(m),
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
 		if err != nil {

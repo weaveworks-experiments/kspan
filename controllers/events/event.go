@@ -53,7 +53,6 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		ret.object.Kind = "replicaset"
 		ret.object.Namespace = lc(ret.actor.Namespace)
 		ret.object.Name = lc(event.Message[pos : pos+end])
-		objRef = ret.child
 	}
 
 	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)

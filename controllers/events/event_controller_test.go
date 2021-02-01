@@ -34,7 +34,7 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 			name: "scaledown-later",
 			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8},
 			wantTraces: []string{
-				"0: kubectl Deployment.Update ",
+				"0: kubectl deployment.Update ",
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
 				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
 				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
@@ -50,7 +50,7 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 			name: "scaledown-earlier",
 			perm: []int{0, 6, 1, 2, 3, 4, 5, 7, 8},
 			wantTraces: []string{
-				"0: kubectl Deployment.Update ",
+				"0: kubectl deployment.Update ",
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
 				"2: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
 				"3: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
