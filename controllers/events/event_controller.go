@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -37,15 +36,6 @@ type EventWatcher struct {
 	pending []*corev1.Event
 
 	resources map[source]*resource.Resource
-}
-
-type parentChild struct {
-	parent objectReference
-	child  objectReference
-}
-
-func (p parentChild) String() string {
-	return fmt.Sprintf("parent: %s, child: %s", p.parent, p.child) // TODO improve this
 }
 
 // Info about the source of an event, e.g. kubelet
@@ -193,8 +183,8 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	}
 	// If no owners, this is a top-level object
 	if len(m.GetOwnerReferences()) == 0 {
-		ref := parentChild{ // parent is blank
-			child: refFromObject(m),
+		ref := actionReference{
+			object: refFromObject(m),
 		}
 		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
@@ -202,15 +192,15 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	}
 	// See if we have any recent event for an owner
 	for _, ownerRef := range m.GetOwnerReferences() {
-		ref := parentChild{
-			parent: refFromOwner(ownerRef, m.GetNamespace()),
-			child:  refFromObject(m),
+		ref := actionReference{
+			actor:  refFromOwner(ownerRef, m.GetNamespace()),
+			object: refFromObject(m),
 		}
 		if spanContext, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
 		}
-		// Try the parent on its own
-		if spanContext, found := recent.lookupSpanContext(parentChild{parent: ref.parent}); found {
+		// Try the actor on its own
+		if spanContext, found := recent.lookupSpanContext(actionReference{actor: ref.actor}); found {
 			return spanContext, nil
 		}
 	}
@@ -243,8 +233,8 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 	}
 	// If no owners and no recent data, create a span based off this top-level object
 	if len(m.GetOwnerReferences()) == 0 {
-		ref := parentChild{ // parent is blank
-			child: refFromObject(m),
+		ref := actionReference{
+			actor: refFromObject(m),
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
 		if err != nil {

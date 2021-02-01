@@ -15,16 +15,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// bundle up two object references to track who did what to whom
+type actionReference struct {
+	actor  objectReference // this is the object that did something
+	object objectReference // this is what it was done to, if necessary to disambiguate
+}
+
+func (p actionReference) String() string {
+	return fmt.Sprintf("actor: %s, object: %s", p.actor, p.object) // TODO improve this
+}
+
 // Get the object relating to an event, after applying some heuristics
 // or a blank struct if this can't be done
-func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, parentChild, error) {
+func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, actionReference, error) {
 	if event.InvolvedObject.Name == "" {
-		return nil, parentChild{}, fmt.Errorf("No involved object")
+		return nil, actionReference{}, fmt.Errorf("No involved object")
 	}
 
 	objRef := refFromObjRef(event.InvolvedObject)
-	ret := parentChild{
-		parent: objRef,
+	ret := actionReference{
+		actor: objRef,
 	}
 
 	switch {
@@ -40,9 +50,9 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		if end == -1 {
 			break
 		}
-		ret.child.Kind = "replicaset"
-		ret.child.Namespace = lc(ret.parent.Namespace)
-		ret.child.Name = lc(event.Message[pos : pos+end])
+		ret.object.Kind = "replicaset"
+		ret.object.Namespace = lc(ret.actor.Namespace)
+		ret.object.Name = lc(event.Message[pos : pos+end])
 		objRef = ret.child
 	}
 

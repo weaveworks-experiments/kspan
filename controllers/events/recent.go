@@ -15,7 +15,7 @@ type recentInfoStore struct {
 	recentWindow time.Duration // events within this window are considered likely to belong together
 	expireAfter  time.Duration // how long to keep events in the recent cache
 
-	info map[parentChild]recentInfo
+	info map[actionReference]recentInfo
 }
 
 // Info about what happened recently with an object
@@ -28,18 +28,18 @@ func newRecentInfoStore() recentInfoStore {
 	return recentInfoStore{
 		recentWindow: defaultRecentWindow,
 		expireAfter:  defaultExpireAfter,
-		info:         make(map[parentChild]recentInfo),
+		info:         make(map[actionReference]recentInfo),
 	}
 }
 
-func (r *recentInfoStore) store(key parentChild, spanContext trace.SpanContext) {
+func (r *recentInfoStore) store(key actionReference, spanContext trace.SpanContext) {
 	r.info[key] = recentInfo{
 		lastUsed:    time.Now(),
 		SpanContext: spanContext,
 	}
 }
 
-func (r *recentInfoStore) lookupSpanContext(key parentChild) (trace.SpanContext, bool) {
+func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanContext, bool) {
 	now := time.Now()
 	value, ok := r.info[key]
 	if !ok {

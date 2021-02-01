@@ -64,7 +64,7 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 }
 
 // Map the topmost owning object to a span, perhaps creating a new trace
-func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (success bool, ref parentChild, remoteContext trace.SpanContext, err error) {
+func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (success bool, ref actionReference, remoteContext trace.SpanContext, err error) {
 	var involved runtime.Object
 	involved, ref, err = objectFromEvent(ctx, client, event)
 	if err != nil {
