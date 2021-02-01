@@ -76,6 +76,11 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	if eventTime(&event).Before(time.Now().Add(-r.recent.recentWindow)) {
+		// too old - ignore
+		return ctrl.Result{}, nil
+	}
+
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
