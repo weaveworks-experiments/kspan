@@ -156,7 +156,7 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 	// Send out a span from the event details
 	span := r.eventToSpan(event, remoteContext)
 	r.emitSpan(ctx, span)
-	r.recent.store(ref, span.SpanContext)
+	r.recent.store(ref, remoteContext, span.SpanContext)
 
 	return true, nil
 }
@@ -186,7 +186,7 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 		ref := actionReference{
 			object: refFromObject(m),
 		}
-		if spanContext, found := recent.lookupSpanContext(ref); found {
+		if spanContext, _, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
 		}
 	}
@@ -196,11 +196,11 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 			actor:  refFromOwner(ownerRef, m.GetNamespace()),
 			object: refFromObject(m),
 		}
-		if spanContext, found := recent.lookupSpanContext(ref); found {
+		if spanContext, _, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
 		}
 		// Try the actor on its own
-		if spanContext, found := recent.lookupSpanContext(actionReference{actor: ref.actor}); found {
+		if spanContext, _, found := recent.lookupSpanContext(actionReference{actor: ref.actor}); found {
 			return spanContext, nil
 		}
 	}
@@ -241,7 +241,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 			return noTrace, err
 		}
 		r.emitSpan(ctx, spanData)
-		r.recent.store(ref, spanData.SpanContext)
+		r.recent.store(ref, noTrace, spanData.SpanContext)
 		return spanData.SpanContext, nil
 	}
 	return noTrace, nil

@@ -20,8 +20,9 @@ type recentInfoStore struct {
 
 // Info about what happened recently with an object
 type recentInfo struct {
-	lastUsed time.Time
-	trace.SpanContext
+	lastUsed      time.Time
+	spanContext   trace.SpanContext
+	parentContext trace.SpanContext
 }
 
 func newRecentInfoStore() recentInfoStore {
@@ -32,18 +33,19 @@ func newRecentInfoStore() recentInfoStore {
 	}
 }
 
-func (r *recentInfoStore) store(key actionReference, spanContext trace.SpanContext) {
+func (r *recentInfoStore) store(key actionReference, parentContext, spanContext trace.SpanContext) {
 	r.info[key] = recentInfo{
-		lastUsed:    time.Now(),
-		SpanContext: spanContext,
+		lastUsed:      time.Now(),
+		spanContext:   spanContext,
+		parentContext: parentContext,
 	}
 }
 
-func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanContext, bool) {
+func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanContext, trace.SpanContext, bool) {
 	now := time.Now()
 	value, ok := r.info[key]
 	if !ok {
-		return noTrace, false
+		return noTrace, noTrace, false
 	}
 	if value.lastUsed.Before(now.Add(-r.recentWindow)) {
 		// fmt.Printf("key %v info too old %s, %s\n", key, value.lastUsed, now.Add(-r.recentWindow))
@@ -51,7 +53,7 @@ func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanCont
 	}
 	value.lastUsed = now
 	r.info[key] = value
-	return value.SpanContext, ok
+	return value.spanContext, value.parentContext, ok
 }
 
 func (r *recentInfoStore) expire() {

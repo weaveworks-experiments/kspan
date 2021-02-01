@@ -55,7 +55,7 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 		if success {
 			span := r.eventToSpan(event, remoteContext)
 			r.emitSpan(ctx, span)
-			r.recent.store(ref, span.SpanContext)
+			r.recent.store(ref, remoteContext, span.SpanContext)
 		}
 		// remove event from pending queue
 		r.pending = append(r.pending[:i], r.pending[i+1:]...)
