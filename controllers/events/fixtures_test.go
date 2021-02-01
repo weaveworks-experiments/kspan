@@ -1565,3 +1565,2092 @@ status:
   qosClass: BestEffort
   startTime: "2020-12-03T17:53:51Z"
   `
+
+//----------------------------------------------------------------------------------
+// Events from a two-pod deployment rolling update
+var p2deploymentUpdateEvents = []string{`
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1611421"
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Scaled up replica set bryan-podinfo-5c5df9754b to 1
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo.165ebba1f2678aa8
+  namespace: default
+  resourceVersion: "1611424"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo.165ebba1f2678aa8
+  uid: 3e558875-b9e8-4fa7-9818-c70e231eda83
+reason: ScalingReplicaSet
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: deployment-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: ReplicaSet
+  name: bryan-podinfo-5c5df9754b
+  namespace: default
+  resourceVersion: "1611422"
+  uid: 05072034-2449-457f-9110-70517854f927
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: 'Created pod: bryan-podinfo-5c5df9754b-4w2hj'
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-5c5df9754b.165ebba1f2eeaad9
+  namespace: default
+  resourceVersion: "1611426"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b.165ebba1f2eeaad9
+  uid: 7c984095-ba82-4220-ac52-0a543243fd7c
+reason: SuccessfulCreate
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: replicaset-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  resourceVersion: "1611425"
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Successfully assigned default/bryan-podinfo-5c5df9754b-4w2hj to kind-control-plane
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj.165ebba1f35ef17d
+  namespace: default
+  resourceVersion: "1611430"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-4w2hj.165ebba1f35ef17d
+  uid: 27f40b15-f116-4691-ad69-d699e83800fa
+reason: Scheduled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: default-scheduler
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: ReplicaSet
+  name: bryan-podinfo-787c9986b5
+  namespace: default
+  resourceVersion: "1611427"
+  uid: 548a11d4-3f6f-43eb-baad-07c7c17b71c6
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: 'Deleted pod: bryan-podinfo-787c9986b5-tkd9p'
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-787c9986b5.165ebba1f4a2c54c
+  namespace: default
+  resourceVersion: "1611433"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-787c9986b5.165ebba1f4a2c54c
+  uid: 98c81744-e539-4ac6-9d7c-f60447036869
+reason: SuccessfulDelete
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: replicaset-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-787c9986b5-tkd9p
+  namespace: default
+  resourceVersion: "1412655"
+  uid: d932d275-e404-4a9b-b560-9258d8834a90
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Stopping container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-787c9986b5-tkd9p.165ebba1f4af5de8
+  namespace: default
+  resourceVersion: "1611435"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-787c9986b5-tkd9p.165ebba1f4af5de8
+  uid: 3cd55e29-4ce1-49f2-9ad2-6183c2e18b98
+reason: Killing
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 3
+eventTime: null
+firstTimestamp: "2021-01-28T16:59:06Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1611421"
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Scaled down replica set bryan-podinfo-787c9986b5 to 1
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo.165e73e581c6c81c
+  namespace: default
+  resourceVersion: "1611436"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo.165e73e581c6c81c
+  uid: a9422298-c49c-4fd9-ad61-4a8e2241773d
+reason: ScalingReplicaSet
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: deployment-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1611423"
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Scaled up replica set bryan-podinfo-5c5df9754b to 2
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo.165ebba1f65798a6
+  namespace: default
+  resourceVersion: "1611440"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo.165ebba1f65798a6
+  uid: 53b624a3-54fe-4bbf-9708-0449024546e3
+reason: ScalingReplicaSet
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: deployment-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: ReplicaSet
+  name: bryan-podinfo-5c5df9754b
+  namespace: default
+  resourceVersion: "1611439"
+  uid: 05072034-2449-457f-9110-70517854f927
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: 'Created pod: bryan-podinfo-5c5df9754b-bhj4w'
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-5c5df9754b.165ebba1f6bfff5c
+  namespace: default
+  resourceVersion: "1611444"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b.165ebba1f6bfff5c
+  uid: 27ba545e-f4fd-4ac8-8d28-d958fceb9c1d
+reason: SuccessfulCreate
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: replicaset-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:40Z"
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  resourceVersion: "1611442"
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+kind: Event
+lastTimestamp: "2021-01-29T14:53:40Z"
+message: Successfully assigned default/bryan-podinfo-5c5df9754b-bhj4w to kind-control-plane
+metadata:
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w.165ebba1f7236fe9
+  namespace: default
+  resourceVersion: "1611447"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-bhj4w.165ebba1f7236fe9
+  uid: f72ad0ce-2f14-410f-8f69-006d5b195ba9
+reason: Scheduled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: default-scheduler
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:41Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  resourceVersion: "1611428"
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+kind: Event
+lastTimestamp: "2021-01-29T14:53:41Z"
+message: Pulling image "ghcr.io/stefanprodan/podinfo:5.0.3"
+metadata:
+  creationTimestamp: "2021-01-29T14:53:41Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj.165ebba211681482
+  namespace: default
+  resourceVersion: "1611451"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-4w2hj.165ebba211681482
+  uid: bb755e32-cf06-4c66-99f4-ede8c91df6fd
+reason: Pulling
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:41Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  resourceVersion: "1611445"
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+kind: Event
+lastTimestamp: "2021-01-29T14:53:41Z"
+message: Pulling image "ghcr.io/stefanprodan/podinfo:5.0.3"
+metadata:
+  creationTimestamp: "2021-01-29T14:53:41Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w.165ebba214657257
+  namespace: default
+  resourceVersion: "1611452"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-bhj4w.165ebba214657257
+  uid: fd343dd5-90e0-4fca-8d37-7a070ac0952a
+reason: Pulling
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:48Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  resourceVersion: "1611428"
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+kind: Event
+lastTimestamp: "2021-01-29T14:53:48Z"
+message: Successfully pulled image "ghcr.io/stefanprodan/podinfo:5.0.3" in 7.556422631s
+metadata:
+  creationTimestamp: "2021-01-29T14:53:48Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj.165ebba3d3ce1b9c
+  namespace: default
+  resourceVersion: "1611476"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-4w2hj.165ebba3d3ce1b9c
+  uid: 8caf0547-a31d-4c71-bc0c-ec145178161a
+reason: Pulled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  resourceVersion: "1611428"
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Created container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj.165ebba3d777efc8
+  namespace: default
+  resourceVersion: "1611477"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-4w2hj.165ebba3d777efc8
+  uid: a0cfbcbf-6fd0-4d9e-a8c1-ea71e595f25f
+reason: Created
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  resourceVersion: "1611428"
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Started container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj.165ebba3dbc2684e
+  namespace: default
+  resourceVersion: "1611478"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-4w2hj.165ebba3dbc2684e
+  uid: c7d2f53b-9bb5-4d85-98e3-c91517a3e947
+reason: Started
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  resourceVersion: "1611445"
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Successfully pulled image "ghcr.io/stefanprodan/podinfo:5.0.3" in 8.129591184s
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w.165ebba3f8f55017
+  namespace: default
+  resourceVersion: "1611479"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-bhj4w.165ebba3f8f55017
+  uid: 49737621-f199-49ee-a46e-44e0a1c277e2
+reason: Pulled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  resourceVersion: "1611445"
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Created container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w.165ebba3fa321d97
+  namespace: default
+  resourceVersion: "1611480"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-bhj4w.165ebba3fa321d97
+  uid: 765e2d59-ff78-4b81-9327-7239f7549f8d
+reason: Created
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  resourceVersion: "1611445"
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Started container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w.165ebba3ff64a8d1
+  namespace: default
+  resourceVersion: "1611481"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-5c5df9754b-bhj4w.165ebba3ff64a8d1
+  uid: 04607530-2579-4e1e-9b5b-918faf2ce8ba
+reason: Started
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 2
+eventTime: null
+firstTimestamp: "2021-01-28T18:06:03Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1611450"
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Scaled down replica set bryan-podinfo-787c9986b5 to 0
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo.165e778cd8e469b5
+  namespace: default
+  resourceVersion: "1611488"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo.165e778cd8e469b5
+  uid: 5a6c866d-851f-4c36-b410-aefb3559b211
+reason: ScalingReplicaSet
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: deployment-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{podinfod}
+  kind: Pod
+  name: bryan-podinfo-787c9986b5-fws9t
+  namespace: default
+  resourceVersion: "1412667"
+  uid: 02eb41fb-4201-41e7-9db3-b903b8689e08
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: Stopping container podinfod
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-787c9986b5-fws9t.165ebba40cc3d8d8
+  namespace: default
+  resourceVersion: "1611492"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-787c9986b5-fws9t.165ebba40cc3d8d8
+  uid: 0ac1096e-03d6-4d58-b144-ad0e3b5684a1
+reason: Killing
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: kind-control-plane
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-01-29T14:53:49Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: ReplicaSet
+  name: bryan-podinfo-787c9986b5
+  namespace: default
+  resourceVersion: "1611484"
+  uid: 548a11d4-3f6f-43eb-baad-07c7c17b71c6
+kind: Event
+lastTimestamp: "2021-01-29T14:53:49Z"
+message: 'Deleted pod: bryan-podinfo-787c9986b5-fws9t'
+metadata:
+  creationTimestamp: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-787c9986b5.165ebba40ccf1289
+  namespace: default
+  resourceVersion: "1611493"
+  selfLink: /api/v1/namespaces/default/events/bryan-podinfo-787c9986b5.165ebba40ccf1289
+  uid: 2054b1b3-1c85-42e5-ae23-93d9ce29122e
+reason: SuccessfulDelete
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: replicaset-controller
+type: Normal
+`}
+
+// 2 seconds after the last event time
+const p2deploymentUpdateEventsThresholdStr = "2021-01-29T14:53:51Z"
+
+var p2pod1str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    prometheus.io/port: "9797"
+    prometheus.io/scrape: "true"
+  creationTimestamp: "2021-01-28T18:18:20Z"
+  generateName: bryan-podinfo-787c9986b5-
+  labels:
+    app: podinfo
+    pod-template-hash: 787c9986b5
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:prometheus.io/port: {}
+          f:prometheus.io/scrape: {}
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"548a11d4-3f6f-43eb-baad-07c7c17b71c6"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:containers:
+          k:{"name":"podinfod"}:
+            .: {}
+            f:command: {}
+            f:env:
+              .: {}
+              k:{"name":"GOGC"}:
+                .: {}
+                f:name: {}
+                f:value: {}
+            f:image: {}
+            f:imagePullPolicy: {}
+            f:name: {}
+            f:resources:
+              .: {}
+              f:limits:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+              f:requests:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+            f:terminationMessagePath: {}
+            f:terminationMessagePolicy: {}
+        f:dnsPolicy: {}
+        f:enableServiceLinks: {}
+        f:restartPolicy: {}
+        f:schedulerName: {}
+        f:securityContext: {}
+        f:terminationGracePeriodSeconds: {}
+        f:tolerations: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-28T18:18:20Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:conditions:
+          k:{"type":"ContainersReady"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Initialized"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Ready"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+        f:containerStatuses: {}
+        f:hostIP: {}
+        f:phase: {}
+        f:podIP: {}
+        f:podIPs:
+          .: {}
+          k:{"ip":"10.244.0.13"}:
+            .: {}
+            f:ip: {}
+        f:startTime: {}
+    manager: kubelet
+    operation: Update
+    time: "2021-01-28T18:18:21Z"
+  name: bryan-podinfo-787c9986b5-fws9t
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: bryan-podinfo-787c9986b5
+    uid: 548a11d4-3f6f-43eb-baad-07c7c17b71c6
+  resourceVersion: "1412681"
+  selfLink: /api/v1/namespaces/default/pods/bryan-podinfo-787c9986b5-fws9t
+  uid: 02eb41fb-4201-41e7-9db3-b903b8689e08
+spec:
+  containers:
+  - command:
+    - ./podinfo
+    - --port-metrics=9797
+    env:
+    - name: GOGC
+      value: "100"
+    image: ghcr.io/stefanprodan/podinfo:5.1.2
+    imagePullPolicy: IfNotPresent
+    name: podinfod
+    resources:
+      limits:
+        cpu: "2"
+        memory: 127Mi
+      requests:
+        cpu: 200m
+        memory: 100Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-tkz6n
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: kind-control-plane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+  volumes:
+  - name: default-token-tkz6n
+    secret:
+      defaultMode: 420
+      secretName: default-token-tkz6n
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:20Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:21Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:21Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:20Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://caf42259e0f766e0f509c42e775fc02aece37d55b0a0864f392142d7f1c094ca
+    image: ghcr.io/stefanprodan/podinfo:5.1.2
+    imageID: ghcr.io/stefanprodan/podinfo@sha256:fbdde7bc6ae32ddac92131165ea46ce688e1d0be98a808c02fb78393d85750a8
+    lastState: {}
+    name: podinfod
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-01-28T18:18:21Z"
+  hostIP: 172.18.0.2
+  phase: Running
+  podIP: 10.244.0.13
+  podIPs:
+  - ip: 10.244.0.13
+  qosClass: Burstable
+  startTime: "2021-01-28T18:18:20Z"
+  `
+
+var p2pod2str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    prometheus.io/port: "9797"
+    prometheus.io/scrape: "true"
+  creationTimestamp: "2021-01-28T18:18:20Z"
+  generateName: bryan-podinfo-787c9986b5-
+  labels:
+    app: podinfo
+    pod-template-hash: 787c9986b5
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:prometheus.io/port: {}
+          f:prometheus.io/scrape: {}
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"548a11d4-3f6f-43eb-baad-07c7c17b71c6"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:containers:
+          k:{"name":"podinfod"}:
+            .: {}
+            f:command: {}
+            f:env:
+              .: {}
+              k:{"name":"GOGC"}:
+                .: {}
+                f:name: {}
+                f:value: {}
+            f:image: {}
+            f:imagePullPolicy: {}
+            f:name: {}
+            f:resources:
+              .: {}
+              f:limits:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+              f:requests:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+            f:terminationMessagePath: {}
+            f:terminationMessagePolicy: {}
+        f:dnsPolicy: {}
+        f:enableServiceLinks: {}
+        f:restartPolicy: {}
+        f:schedulerName: {}
+        f:securityContext: {}
+        f:terminationGracePeriodSeconds: {}
+        f:tolerations: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-28T18:18:20Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:conditions:
+          k:{"type":"ContainersReady"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Initialized"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Ready"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+        f:containerStatuses: {}
+        f:hostIP: {}
+        f:phase: {}
+        f:podIP: {}
+        f:podIPs:
+          .: {}
+          k:{"ip":"10.244.0.12"}:
+            .: {}
+            f:ip: {}
+        f:startTime: {}
+    manager: kubelet
+    operation: Update
+    time: "2021-01-28T18:18:21Z"
+  name: bryan-podinfo-787c9986b5-tkd9p
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: bryan-podinfo-787c9986b5
+    uid: 548a11d4-3f6f-43eb-baad-07c7c17b71c6
+  resourceVersion: "1412683"
+  selfLink: /api/v1/namespaces/default/pods/bryan-podinfo-787c9986b5-tkd9p
+  uid: d932d275-e404-4a9b-b560-9258d8834a90
+spec:
+  containers:
+  - command:
+    - ./podinfo
+    - --port-metrics=9797
+    env:
+    - name: GOGC
+      value: "100"
+    image: ghcr.io/stefanprodan/podinfo:5.1.2
+    imagePullPolicy: IfNotPresent
+    name: podinfod
+    resources:
+      limits:
+        cpu: "2"
+        memory: 127Mi
+      requests:
+        cpu: 200m
+        memory: 100Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-tkz6n
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: kind-control-plane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+  volumes:
+  - name: default-token-tkz6n
+    secret:
+      defaultMode: 420
+      secretName: default-token-tkz6n
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:20Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:21Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:21Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-28T18:18:20Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://4f29ed67f451255545dc9d5a56ddd8e1cda65c32ea92d13f4bd54c530531c6ed
+    image: ghcr.io/stefanprodan/podinfo:5.1.2
+    imageID: ghcr.io/stefanprodan/podinfo@sha256:fbdde7bc6ae32ddac92131165ea46ce688e1d0be98a808c02fb78393d85750a8
+    lastState: {}
+    name: podinfod
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-01-28T18:18:21Z"
+  hostIP: 172.18.0.2
+  phase: Running
+  podIP: 10.244.0.12
+  podIPs:
+  - ip: 10.244.0.12
+  qosClass: Burstable
+  startTime: "2021-01-28T18:18:20Z"
+`
+
+var p2replicaSet1str = `
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  annotations:
+    deployment.kubernetes.io/desired-replicas: "2"
+    deployment.kubernetes.io/max-replicas: "3"
+    deployment.kubernetes.io/revision: "5"
+    deployment.kubernetes.io/revision-history: "2"
+  creationTimestamp: "2021-01-28T16:58:40Z"
+  generation: 8
+  labels:
+    app: podinfo
+    pod-template-hash: 787c9986b5
+  managedFields:
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:deployment.kubernetes.io/desired-replicas: {}
+          f:deployment.kubernetes.io/max-replicas: {}
+          f:deployment.kubernetes.io/revision: {}
+          f:deployment.kubernetes.io/revision-history: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"0bf707bd-fb6f-4682-8a0d-d06ea200633f"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:replicas: {}
+        f:selector:
+          f:matchLabels:
+            .: {}
+            f:app: {}
+            f:pod-template-hash: {}
+        f:template:
+          f:metadata:
+            f:annotations:
+              .: {}
+              f:prometheus.io/port: {}
+              f:prometheus.io/scrape: {}
+            f:labels:
+              .: {}
+              f:app: {}
+              f:pod-template-hash: {}
+          f:spec:
+            f:containers:
+              k:{"name":"podinfod"}:
+                .: {}
+                f:command: {}
+                f:env:
+                  .: {}
+                  k:{"name":"GOGC"}:
+                    .: {}
+                    f:name: {}
+                    f:value: {}
+                f:image: {}
+                f:imagePullPolicy: {}
+                f:name: {}
+                f:resources:
+                  .: {}
+                  f:limits:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                  f:requests:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                f:terminationMessagePath: {}
+                f:terminationMessagePolicy: {}
+            f:dnsPolicy: {}
+            f:restartPolicy: {}
+            f:schedulerName: {}
+            f:securityContext: {}
+            f:terminationGracePeriodSeconds: {}
+            f:tolerations: {}
+      f:status:
+        f:availableReplicas: {}
+        f:fullyLabeledReplicas: {}
+        f:observedGeneration: {}
+        f:readyReplicas: {}
+        f:replicas: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-28T18:18:21Z"
+  name: bryan-podinfo-787c9986b5
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Deployment
+    name: bryan-podinfo
+    uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+  resourceVersion: "1412685"
+  selfLink: /apis/apps/v1/namespaces/default/replicasets/bryan-podinfo-787c9986b5
+  uid: 548a11d4-3f6f-43eb-baad-07c7c17b71c6
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+      pod-template-hash: 787c9986b5
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9797"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: podinfo
+        pod-template-hash: 787c9986b5
+    spec:
+      containers:
+      - command:
+        - ./podinfo
+        - --port-metrics=9797
+        env:
+        - name: GOGC
+          value: "100"
+        image: ghcr.io/stefanprodan/podinfo:5.1.2
+        imagePullPolicy: IfNotPresent
+        name: podinfod
+        resources:
+          limits:
+            cpu: "2"
+            memory: 127Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+status:
+  availableReplicas: 2
+  fullyLabeledReplicas: 2
+  observedGeneration: 8
+  readyReplicas: 2
+  replicas: 2
+`
+
+var p2deployment1 = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "5"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"bryan-podinfo","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"podinfo"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":1}},"template":{"metadata":{"annotations":{"prometheus.io/port":"9797","prometheus.io/scrape":"true"},"labels":{"app":"podinfo"}},"spec":{"containers":[{"command":["./podinfo","--port-metrics=9797"],"env":[{"name":"GOGC","value":"100"}],"image":"ghcr.io/stefanprodan/podinfo:5.1.2","name":"podinfod","resources":{"limits":{"cpu":"2","memory":"127Mi"},"requests":{"cpu":"200m","memory":"100Mi"}}}],"tolerations":[{"effect":"NoSchedule","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}]}}}}
+  creationTimestamp: "2021-01-28T16:57:00Z"
+  generation: 8
+  managedFields:
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:kubectl.kubernetes.io/last-applied-configuration: {}
+      f:spec:
+        f:progressDeadlineSeconds: {}
+        f:replicas: {}
+        f:revisionHistoryLimit: {}
+        f:selector:
+          f:matchLabels:
+            .: {}
+            f:app: {}
+        f:strategy:
+          f:rollingUpdate:
+            .: {}
+            f:maxSurge: {}
+            f:maxUnavailable: {}
+          f:type: {}
+        f:template:
+          f:metadata:
+            f:annotations:
+              .: {}
+              f:prometheus.io/port: {}
+              f:prometheus.io/scrape: {}
+            f:labels:
+              .: {}
+              f:app: {}
+          f:spec:
+            f:containers:
+              k:{"name":"podinfod"}:
+                .: {}
+                f:command: {}
+                f:env:
+                  .: {}
+                  k:{"name":"GOGC"}:
+                    .: {}
+                    f:name: {}
+                    f:value: {}
+                f:image: {}
+                f:imagePullPolicy: {}
+                f:name: {}
+                f:resources:
+                  .: {}
+                  f:limits:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                  f:requests:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                f:terminationMessagePath: {}
+                f:terminationMessagePolicy: {}
+            f:dnsPolicy: {}
+            f:restartPolicy: {}
+            f:schedulerName: {}
+            f:securityContext: {}
+            f:terminationGracePeriodSeconds: {}
+            f:tolerations: {}
+    manager: kubectl-client-side-apply
+    operation: Update
+    time: "2021-01-28T18:18:20Z"
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          f:deployment.kubernetes.io/revision: {}
+      f:status:
+        f:availableReplicas: {}
+        f:conditions:
+          .: {}
+          k:{"type":"Available"}:
+            .: {}
+            f:lastTransitionTime: {}
+            f:lastUpdateTime: {}
+            f:message: {}
+            f:reason: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Progressing"}:
+            .: {}
+            f:lastTransitionTime: {}
+            f:lastUpdateTime: {}
+            f:message: {}
+            f:reason: {}
+            f:status: {}
+            f:type: {}
+        f:observedGeneration: {}
+        f:readyReplicas: {}
+        f:replicas: {}
+        f:updatedReplicas: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-28T18:18:21Z"
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1412694"
+  selfLink: /apis/apps/v1/namespaces/default/deployments/bryan-podinfo
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: podinfo
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9797"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: podinfo
+    spec:
+      containers:
+      - command:
+        - ./podinfo
+        - --port-metrics=9797
+        env:
+        - name: GOGC
+          value: "100"
+        image: ghcr.io/stefanprodan/podinfo:5.1.2
+        imagePullPolicy: IfNotPresent
+        name: podinfod
+        resources:
+          limits:
+            cpu: "2"
+            memory: 127Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2021-01-28T16:57:00Z"
+    lastUpdateTime: "2021-01-28T16:57:00Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2021-01-28T16:57:00Z"
+    lastUpdateTime: "2021-01-28T18:18:21Z"
+    message: ReplicaSet "bryan-podinfo-787c9986b5" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 8
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2
+`
+
+var p2pod3str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    prometheus.io/port: "9797"
+    prometheus.io/scrape: "true"
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  generateName: bryan-podinfo-5c5df9754b-
+  labels:
+    app: podinfo
+    pod-template-hash: 5c5df9754b
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:prometheus.io/port: {}
+          f:prometheus.io/scrape: {}
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"05072034-2449-457f-9110-70517854f927"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:containers:
+          k:{"name":"podinfod"}:
+            .: {}
+            f:command: {}
+            f:env:
+              .: {}
+              k:{"name":"GOGC"}:
+                .: {}
+                f:name: {}
+                f:value: {}
+            f:image: {}
+            f:imagePullPolicy: {}
+            f:name: {}
+            f:resources:
+              .: {}
+              f:limits:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+              f:requests:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+            f:terminationMessagePath: {}
+            f:terminationMessagePolicy: {}
+        f:dnsPolicy: {}
+        f:enableServiceLinks: {}
+        f:restartPolicy: {}
+        f:schedulerName: {}
+        f:securityContext: {}
+        f:terminationGracePeriodSeconds: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-29T14:53:40Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:conditions:
+          k:{"type":"ContainersReady"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Initialized"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Ready"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+        f:containerStatuses: {}
+        f:hostIP: {}
+        f:phase: {}
+        f:podIP: {}
+        f:podIPs:
+          .: {}
+          k:{"ip":"10.244.0.14"}:
+            .: {}
+            f:ip: {}
+        f:startTime: {}
+    manager: kubelet
+    operation: Update
+    time: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-4w2hj
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: bryan-podinfo-5c5df9754b
+    uid: 05072034-2449-457f-9110-70517854f927
+  resourceVersion: "1611482"
+  selfLink: /api/v1/namespaces/default/pods/bryan-podinfo-5c5df9754b-4w2hj
+  uid: 958b118d-9e36-466b-8ca5-40d2a04e04d5
+spec:
+  containers:
+  - command:
+    - ./podinfo
+    - --port-metrics=9797
+    env:
+    - name: GOGC
+      value: "100"
+    image: ghcr.io/stefanprodan/podinfo:5.0.3
+    imagePullPolicy: IfNotPresent
+    name: podinfod
+    resources:
+      limits:
+        cpu: "2"
+        memory: 127Mi
+      requests:
+        cpu: 200m
+        memory: 100Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-tkz6n
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: kind-control-plane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: default-token-tkz6n
+    secret:
+      defaultMode: 420
+      secretName: default-token-tkz6n
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:40Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:49Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:49Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:40Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://3fe4c96ea25b28261f5e4ca9defff5dfe8b484c6984f1291c96dccc4b5a75909
+    image: ghcr.io/stefanprodan/podinfo:5.0.3
+    imageID: ghcr.io/stefanprodan/podinfo@sha256:8704da90172710d422af855049175c1a8295731cbe2ad3b9a1c1074feecf8c10
+    lastState: {}
+    name: podinfod
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-01-29T14:53:49Z"
+  hostIP: 172.18.0.2
+  phase: Running
+  podIP: 10.244.0.14
+  podIPs:
+  - ip: 10.244.0.14
+  qosClass: Burstable
+  startTime: "2021-01-29T14:53:40Z"
+`
+
+var p2pod4str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    prometheus.io/port: "9797"
+    prometheus.io/scrape: "true"
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  generateName: bryan-podinfo-5c5df9754b-
+  labels:
+    app: podinfo
+    pod-template-hash: 5c5df9754b
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:prometheus.io/port: {}
+          f:prometheus.io/scrape: {}
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"05072034-2449-457f-9110-70517854f927"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:containers:
+          k:{"name":"podinfod"}:
+            .: {}
+            f:command: {}
+            f:env:
+              .: {}
+              k:{"name":"GOGC"}:
+                .: {}
+                f:name: {}
+                f:value: {}
+            f:image: {}
+            f:imagePullPolicy: {}
+            f:name: {}
+            f:resources:
+              .: {}
+              f:limits:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+              f:requests:
+                .: {}
+                f:cpu: {}
+                f:memory: {}
+            f:terminationMessagePath: {}
+            f:terminationMessagePolicy: {}
+        f:dnsPolicy: {}
+        f:enableServiceLinks: {}
+        f:restartPolicy: {}
+        f:schedulerName: {}
+        f:securityContext: {}
+        f:terminationGracePeriodSeconds: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-29T14:53:40Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:conditions:
+          k:{"type":"ContainersReady"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Initialized"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Ready"}:
+            .: {}
+            f:lastProbeTime: {}
+            f:lastTransitionTime: {}
+            f:status: {}
+            f:type: {}
+        f:containerStatuses: {}
+        f:hostIP: {}
+        f:phase: {}
+        f:podIP: {}
+        f:podIPs:
+          .: {}
+          k:{"ip":"10.244.0.15"}:
+            .: {}
+            f:ip: {}
+        f:startTime: {}
+    manager: kubelet
+    operation: Update
+    time: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b-bhj4w
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: bryan-podinfo-5c5df9754b
+    uid: 05072034-2449-457f-9110-70517854f927
+  resourceVersion: "1611485"
+  selfLink: /api/v1/namespaces/default/pods/bryan-podinfo-5c5df9754b-bhj4w
+  uid: b17ddbbe-b2f2-459e-a391-0c5efe4b76d4
+spec:
+  containers:
+  - command:
+    - ./podinfo
+    - --port-metrics=9797
+    env:
+    - name: GOGC
+      value: "100"
+    image: ghcr.io/stefanprodan/podinfo:5.0.3
+    imagePullPolicy: IfNotPresent
+    name: podinfod
+    resources:
+      limits:
+        cpu: "2"
+        memory: 127Mi
+      requests:
+        cpu: 200m
+        memory: 100Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-tkz6n
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: kind-control-plane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: default-token-tkz6n
+    secret:
+      defaultMode: 420
+      secretName: default-token-tkz6n
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:40Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:49Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:49Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-29T14:53:40Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://c140cbbdf6efc8aa60f1002077ea6a956abb5e63f4085e8044e5352aa2af336f
+    image: ghcr.io/stefanprodan/podinfo:5.0.3
+    imageID: ghcr.io/stefanprodan/podinfo@sha256:8704da90172710d422af855049175c1a8295731cbe2ad3b9a1c1074feecf8c10
+    lastState: {}
+    name: podinfod
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-01-29T14:53:49Z"
+  hostIP: 172.18.0.2
+  phase: Running
+  podIP: 10.244.0.15
+  podIPs:
+  - ip: 10.244.0.15
+  qosClass: Burstable
+  startTime: "2021-01-29T14:53:40Z"
+`
+
+var p2replicaSet2str = `
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  annotations:
+    deployment.kubernetes.io/desired-replicas: "2"
+    deployment.kubernetes.io/max-replicas: "3"
+    deployment.kubernetes.io/revision: "6"
+  creationTimestamp: "2021-01-29T14:53:40Z"
+  generation: 2
+  labels:
+    app: podinfo
+    pod-template-hash: 5c5df9754b
+  managedFields:
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:deployment.kubernetes.io/desired-replicas: {}
+          f:deployment.kubernetes.io/max-replicas: {}
+          f:deployment.kubernetes.io/revision: {}
+        f:labels:
+          .: {}
+          f:app: {}
+          f:pod-template-hash: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"0bf707bd-fb6f-4682-8a0d-d06ea200633f"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:spec:
+        f:replicas: {}
+        f:selector:
+          f:matchLabels:
+            .: {}
+            f:app: {}
+            f:pod-template-hash: {}
+        f:template:
+          f:metadata:
+            f:annotations:
+              .: {}
+              f:prometheus.io/port: {}
+              f:prometheus.io/scrape: {}
+            f:labels:
+              .: {}
+              f:app: {}
+              f:pod-template-hash: {}
+          f:spec:
+            f:containers:
+              k:{"name":"podinfod"}:
+                .: {}
+                f:command: {}
+                f:env:
+                  .: {}
+                  k:{"name":"GOGC"}:
+                    .: {}
+                    f:name: {}
+                    f:value: {}
+                f:image: {}
+                f:imagePullPolicy: {}
+                f:name: {}
+                f:resources:
+                  .: {}
+                  f:limits:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                  f:requests:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                f:terminationMessagePath: {}
+                f:terminationMessagePolicy: {}
+            f:dnsPolicy: {}
+            f:restartPolicy: {}
+            f:schedulerName: {}
+            f:securityContext: {}
+            f:terminationGracePeriodSeconds: {}
+      f:status:
+        f:availableReplicas: {}
+        f:fullyLabeledReplicas: {}
+        f:observedGeneration: {}
+        f:readyReplicas: {}
+        f:replicas: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo-5c5df9754b
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Deployment
+    name: bryan-podinfo
+    uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+  resourceVersion: "1611486"
+  selfLink: /apis/apps/v1/namespaces/default/replicasets/bryan-podinfo-5c5df9754b
+  uid: 05072034-2449-457f-9110-70517854f927
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+      pod-template-hash: 5c5df9754b
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9797"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: podinfo
+        pod-template-hash: 5c5df9754b
+    spec:
+      containers:
+      - command:
+        - ./podinfo
+        - --port-metrics=9797
+        env:
+        - name: GOGC
+          value: "100"
+        image: ghcr.io/stefanprodan/podinfo:5.0.3
+        imagePullPolicy: IfNotPresent
+        name: podinfod
+        resources:
+          limits:
+            cpu: "2"
+            memory: 127Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 2
+  fullyLabeledReplicas: 2
+  observedGeneration: 2
+  readyReplicas: 2
+  replicas: 2
+`
+
+var p2deployment2 = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "6"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"bryan-podinfo","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"podinfo"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":1}},"template":{"metadata":{"annotations":{"prometheus.io/port":"9797","prometheus.io/scrape":"true"},"labels":{"app":"podinfo"}},"spec":{"containers":[{"command":["./podinfo","--port-metrics=9797"],"env":[{"name":"GOGC","value":"100"}],"image":"ghcr.io/stefanprodan/podinfo:5.0.3","name":"podinfod","resources":{"limits":{"cpu":"2","memory":"127Mi"},"requests":{"cpu":"200m","memory":"100Mi"}}}]}}}}
+  creationTimestamp: "2021-01-28T16:57:00Z"
+  generation: 9
+  managedFields:
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:kubectl.kubernetes.io/last-applied-configuration: {}
+      f:spec:
+        f:progressDeadlineSeconds: {}
+        f:replicas: {}
+        f:revisionHistoryLimit: {}
+        f:selector:
+          f:matchLabels:
+            .: {}
+            f:app: {}
+        f:strategy:
+          f:rollingUpdate:
+            .: {}
+            f:maxSurge: {}
+            f:maxUnavailable: {}
+          f:type: {}
+        f:template:
+          f:metadata:
+            f:annotations:
+              .: {}
+              f:prometheus.io/port: {}
+              f:prometheus.io/scrape: {}
+            f:labels:
+              .: {}
+              f:app: {}
+          f:spec:
+            f:containers:
+              k:{"name":"podinfod"}:
+                .: {}
+                f:command: {}
+                f:env:
+                  .: {}
+                  k:{"name":"GOGC"}:
+                    .: {}
+                    f:name: {}
+                    f:value: {}
+                f:image: {}
+                f:imagePullPolicy: {}
+                f:name: {}
+                f:resources:
+                  .: {}
+                  f:limits:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                  f:requests:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                f:terminationMessagePath: {}
+                f:terminationMessagePolicy: {}
+            f:dnsPolicy: {}
+            f:restartPolicy: {}
+            f:schedulerName: {}
+            f:securityContext: {}
+            f:terminationGracePeriodSeconds: {}
+    manager: kubectl-client-side-apply
+    operation: Update
+    time: "2021-01-29T14:53:40Z"
+  - apiVersion: apps/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          f:deployment.kubernetes.io/revision: {}
+      f:status:
+        f:availableReplicas: {}
+        f:conditions:
+          .: {}
+          k:{"type":"Available"}:
+            .: {}
+            f:lastTransitionTime: {}
+            f:lastUpdateTime: {}
+            f:message: {}
+            f:reason: {}
+            f:status: {}
+            f:type: {}
+          k:{"type":"Progressing"}:
+            .: {}
+            f:lastTransitionTime: {}
+            f:lastUpdateTime: {}
+            f:message: {}
+            f:reason: {}
+            f:status: {}
+            f:type: {}
+        f:observedGeneration: {}
+        f:readyReplicas: {}
+        f:replicas: {}
+        f:updatedReplicas: {}
+    manager: kube-controller-manager
+    operation: Update
+    time: "2021-01-29T14:53:49Z"
+  name: bryan-podinfo
+  namespace: default
+  resourceVersion: "1611495"
+  selfLink: /apis/apps/v1/namespaces/default/deployments/bryan-podinfo
+  uid: 0bf707bd-fb6f-4682-8a0d-d06ea200633f
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: podinfo
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9797"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: podinfo
+    spec:
+      containers:
+      - command:
+        - ./podinfo
+        - --port-metrics=9797
+        env:
+        - name: GOGC
+          value: "100"
+        image: ghcr.io/stefanprodan/podinfo:5.0.3
+        imagePullPolicy: IfNotPresent
+        name: podinfod
+        resources:
+          limits:
+            cpu: "2"
+            memory: 127Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2021-01-28T16:57:00Z"
+    lastUpdateTime: "2021-01-28T16:57:00Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2021-01-28T16:57:00Z"
+    lastUpdateTime: "2021-01-29T14:53:49Z"
+    message: ReplicaSet "bryan-podinfo-5c5df9754b" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 9
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2
+`
