@@ -183,10 +183,8 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	}
 	// If no owners, this is a top-level object
 	if len(m.GetOwnerReferences()) == 0 {
-		ref := actionReference{
-			object: refFromObject(m),
-		}
-		if spanContext, _, found := recent.lookupSpanContext(ref); found {
+		objRef := refFromObject(m)
+		if spanContext, _, found := recent.lookupSpanContext(actionReference{actor: objRef}); found {
 			return spanContext, nil
 		}
 	}
@@ -198,6 +196,10 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 		}
 		if spanContext, _, found := recent.lookupSpanContext(ref); found {
 			return spanContext, nil
+		}
+		// Try the object on its own
+		if _, parentContext, found := recent.lookupSpanContext(actionReference{actor: ref.object}); found {
+			return parentContext, nil
 		}
 		// Try the actor on its own
 		if spanContext, _, found := recent.lookupSpanContext(actionReference{actor: ref.actor}); found {
