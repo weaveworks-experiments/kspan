@@ -17,8 +17,8 @@ import (
 
 // bundle up two object references to track who did what to whom
 type actionReference struct {
-	actor  objectReference // this is the object that did something
-	object objectReference // this is what it was done to, if necessary to disambiguate
+	actor  objectReference // this is what did something (may be blank if not known)
+	object objectReference // this is what it was done to
 }
 
 func (p actionReference) String() string {
@@ -34,7 +34,7 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 
 	objRef := refFromObjRef(event.InvolvedObject)
 	ret := actionReference{
-		actor: objRef,
+		object: objRef,
 	}
 
 	switch {
@@ -50,8 +50,9 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		if end == -1 {
 			break
 		}
+		ret.actor = ret.object
 		ret.object.Kind = "replicaset"
-		ret.object.Namespace = lc(ret.actor.Namespace)
+		ret.object.Namespace = lc(ret.object.Namespace)
 		ret.object.Name = lc(event.Message[pos : pos+end])
 	}
 
