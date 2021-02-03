@@ -12,18 +12,23 @@ import (
 
 func (r *EventWatcher) checkPending(ctx context.Context) error {
 	log := r.Log
-	log.Info("checkPending")
+	// Take everything off the pending queue before walking it, so nobody else messes with those events
+	r.Lock()
+	pending := make([]*corev1.Event, len(r.pending))
+	copy(pending, r.pending)
+	r.pending = r.pending[:0]
+	r.Unlock()
 	for { // repeat if we do generate any new spans
 		anyEmitted := false
-		for i := 0; i < len(r.pending); { // TODO: locking
-			ev := r.pending[i]
+		for i := 0; i < len(pending); {
+			ev := pending[i]
 			emitted, err := r.emitSpanFromEvent(ctx, log, ev)
 			if err != nil {
 				return err
 			}
 			if emitted {
-				// delete entry from pending (TODO: locking)
-				r.pending = append(r.pending[:i], r.pending[i+1:]...)
+				// delete entry from pending
+				pending = append(pending[:i], pending[i+1:]...)
 				anyEmitted = true
 			} else {
 				i++
@@ -33,20 +38,31 @@ func (r *EventWatcher) checkPending(ctx context.Context) error {
 			break
 		}
 	}
+	// Now copy back what we didn't process, adding any new items on r.pending after the ones that were there before
+	r.Lock()
+	r.pending = append(pending, r.pending...)
+	r.Unlock()
 	return nil
 }
 
 // After we've given up waiting, walk further up the owner chain to look for recent activity;
 // if necessary create a new span based off the topmost owner.
 func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Time) error {
-	// Only go through once; if we can't map at this point we give up
-	for i := 0; i < len(r.pending); { // TODO: locking
+	r.Lock()
+	var olderPending []*corev1.Event
+	// Collect older events and remove them from pending, which we unlock before calling any other methods
+	for i := 0; i < len(r.pending); {
 		event := r.pending[i]
-		// skip over recent events
-		if eventTime(event).After(threshold) {
+		if eventTime(event).Before(threshold) {
+			olderPending = append(olderPending, event)
+			r.pending = append(r.pending[:i], r.pending[i+1:]...)
+		} else {
 			i++
-			continue
 		}
+	}
+	r.Unlock()
+	// Now go through the older events; if we can't map at this point we give up and drop them
+	for _, event := range olderPending {
 		success, ref, remoteContext, err := r.makeSpanContextFromEvent(ctx, r.Client, event)
 		if err != nil {
 			return err
@@ -56,8 +72,6 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 			r.emitSpan(ctx, span)
 			r.recent.store(ref, remoteContext, span.SpanContext)
 		}
-		// remove event from pending queue
-		r.pending = append(r.pending[:i], r.pending[i+1:]...)
 	}
 	return nil
 }

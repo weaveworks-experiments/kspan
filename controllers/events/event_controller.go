@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -26,6 +27,7 @@ var (
 
 // EventWatcher listens to Events
 type EventWatcher struct {
+	sync.Mutex
 	client.Client
 	Log      logr.Logger
 	Exporter tracesdk.SpanExporter
@@ -118,7 +120,9 @@ func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *
 		}
 	} else {
 		// keep this event pending for a bit, see if something shows up that will let us map it.
-		r.pending = append(r.pending, event) // TODO: locking
+		r.Lock()
+		r.pending = append(r.pending, event)
+		r.Unlock()
 	}
 	return nil
 }
@@ -172,6 +176,8 @@ func (r *EventWatcher) emitSpan(ctx context.Context, span *tracesdk.SpanData) {
 }
 
 func (r *EventWatcher) getResource(s source) *resource.Resource {
+	r.Lock()
+	defer r.Unlock()
 	res, found := r.resources[s]
 	if !found {
 		// Make a new resource and cache for later.  TODO: cache eviction
@@ -267,8 +273,10 @@ func (r *EventWatcher) runTicker() {
 }
 
 func (r *EventWatcher) initialize() {
+	r.Lock()
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
+	r.Unlock()
 	go r.runTicker()
 }
 
