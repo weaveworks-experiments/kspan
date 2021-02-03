@@ -29,14 +29,12 @@ var (
 type EventWatcher struct {
 	sync.Mutex
 	client.Client
-	Log      logr.Logger
-	Exporter tracesdk.SpanExporter
-	ticker   *time.Ticker
-
-	recent recentInfoStore
-
-	pending []*corev1.Event
-
+	Log       logr.Logger
+	Exporter  tracesdk.SpanExporter
+	ticker    *time.Ticker
+	startTime time.Time
+	recent    recentInfoStore
+	pending   []*corev1.Event
 	resources map[source]*resource.Resource
 }
 
@@ -78,7 +76,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	if eventTime(&event).Before(time.Now().Add(-r.recent.recentWindow)) {
+	if eventTime(&event).Before(r.startTime.Add(-r.recent.recentWindow)) {
 		// too old - ignore
 		return ctrl.Result{}, nil
 	}
@@ -274,6 +272,7 @@ func (r *EventWatcher) runTicker() {
 
 func (r *EventWatcher) initialize() {
 	r.Lock()
+	r.startTime = time.Now()
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
 	r.Unlock()
