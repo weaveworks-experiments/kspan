@@ -149,9 +149,9 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 	if !success {
 		// If the involved object (or its owner) maps to recent activity, make a span parented off that.
 		remoteContext, err = recentSpanContextFromObject(ctx, involved, &r.recent)
-	if err != nil {
+		if err != nil {
 			return false, err
-	}
+		}
 		success = remoteContext.HasTraceID()
 	}
 	if !success {
@@ -274,8 +274,8 @@ func (r *EventWatcher) initialize() {
 
 func (r *EventWatcher) stop() {
 	if r.ticker != nil {
-	r.ticker.Stop()
-}
+		r.ticker.Stop()
+	}
 }
 
 // SetupWithManager to set up the watcher
