@@ -68,7 +68,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Fetch the Event object
 	var event corev1.Event
 	if err := r.Get(ctx, req.NamespacedName, &event); err != nil {
-		if apierrors.IsNotFound(err) {
+		if isNotFound(err) {
 			// we get this on deleted events, which happen all the time; just ignore it.
 			return ctrl.Result{}, nil
 		}

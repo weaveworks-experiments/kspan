@@ -6,7 +6,6 @@ import (
 
 	"go.opentelemetry.io/otel/api/trace"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -68,7 +67,7 @@ func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client clie
 	var involved runtime.Object
 	involved, ref, err = objectFromEvent(ctx, client, event)
 	if err != nil {
-		if apierrors.IsNotFound(err) { // TODO: could apply naming heuristic to go from a deleted pod to its ReplicaSet
+		if isNotFound(err) { // TODO: could apply naming heuristic to go from a deleted pod to its ReplicaSet
 			err = nil
 		}
 		return
