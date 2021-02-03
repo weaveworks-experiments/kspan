@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/api/trace"
@@ -12,6 +13,7 @@ const (
 )
 
 type recentInfoStore struct {
+	sync.Mutex
 	recentWindow time.Duration // events within this window are considered likely to belong together
 	expireAfter  time.Duration // how long to keep events in the recent cache
 
@@ -34,6 +36,8 @@ func newRecentInfoStore() recentInfoStore {
 }
 
 func (r *recentInfoStore) store(key actionReference, parentContext, spanContext trace.SpanContext) {
+	r.Lock()
+	defer r.Unlock()
 	r.info[key] = recentInfo{
 		lastUsed:      time.Now(),
 		spanContext:   spanContext,
@@ -43,6 +47,8 @@ func (r *recentInfoStore) store(key actionReference, parentContext, spanContext 
 
 func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanContext, trace.SpanContext, bool) {
 	now := time.Now()
+	r.Lock()
+	defer r.Unlock()
 	value, ok := r.info[key]
 	if !ok {
 		return noTrace, noTrace, false
@@ -59,7 +65,8 @@ func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanCont
 func (r *recentInfoStore) expire() {
 	now := time.Now()
 	expiry := now.Add(-r.expireAfter)
-	// lock?
+	r.Lock()
+	defer r.Unlock()
 	for k, v := range r.info {
 		if v.lastUsed.Before(expiry) {
 			delete(r.info, k)
