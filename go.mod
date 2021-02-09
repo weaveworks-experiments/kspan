@@ -21,5 +21,3 @@ require (
 	sigs.k8s.io/controller-runtime v0.5.0
 	sigs.k8s.io/yaml v1.1.0
 )
-
-replace sigs.k8s.io/controller-runtime => /home/vagrant/src/sigs.k8s.io/controller-runtime
