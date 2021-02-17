@@ -61,6 +61,14 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		}
 		ret.actor = ret.object
 		ret.object = objectReference{Kind: "replicaset", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+	case event.Source.Component == "statefulset-controller" && event.InvolvedObject.Kind == "StatefulSet":
+		// if we have a message like "create Pod ingester-3 in StatefulSet ingester successful"; extract the Pod name
+		name := extractWordAfter(event.Message, "Pod ")
+		if name == "" {
+			break
+		}
+		ret.actor = ret.object
+		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
 	}
 
 	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
