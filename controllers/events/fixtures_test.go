@@ -3654,3 +3654,752 @@ status:
   replicas: 2
   updatedReplicas: 2
 `
+
+// Events from a Flux StatefulSet update from one version to another
+var stsUpdateEvents = []string{`
+apiVersion: v1
+count: 7
+eventTime: null
+firstTimestamp: "2021-02-05T10:59:21Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: StatefulSet
+  name: ingester
+  namespace: cortex
+  resourceVersion: "291777939"
+  uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+kind: Event
+lastTimestamp: "2021-02-17T14:20:29Z"
+message: delete Pod ingester-3 in StatefulSet ingester successful
+metadata:
+  creationTimestamp: "2021-02-17T14:20:29Z"
+  name: ingester.1660d4e87d1b450d
+  namespace: cortex
+  resourceVersion: "291777943"
+  selfLink: /api/v1/namespaces/cortex/events/ingester.1660d4e87d1b450d
+  uid: 67902e38-cbac-4814-a781-b5e56421fbbd
+reason: SuccessfulDelete
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: statefulset-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:20:29Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-3
+  namespace: cortex
+  resourceVersion: "291595271"
+  uid: c17e806e-e9c8-49b1-acea-73ec2f33e522
+kind: Event
+lastTimestamp: "2021-02-17T14:20:29Z"
+message: Stopping container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:20:29Z"
+  name: ingester-3.16648ed91d347a99
+  namespace: cortex
+  resourceVersion: "291777944"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-3.16648ed91d347a99
+  uid: 5731fb33-d61e-41ad-b473-bd2f30b1df45
+reason: Killing
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-25.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:20:30Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: statefulset
+  name: ingester
+  namespace: cortex
+kind: Event
+lastTimestamp: "2021-02-17T14:20:30Z"
+message: 'Commit fc4e825b46ac: Update ingester to latest, in dev'
+metadata:
+  annotations:
+    syncMetadata: '{"commits":[{"revision":"fc4e825b46ac659138e227c6110f615ab89a5ecb","message":"Update
+      ingester to latest, in dev"}],"includes":{"other":true}}'
+  creationTimestamp: "2021-02-17T14:20:30Z"
+  name: ingester.16648ed93a40dc0b
+  namespace: cortex
+  resourceVersion: "291777946"
+  selfLink: /api/v1/namespaces/cortex/events/ingester.16648ed93a40dc0b
+  uid: f9d551be-c466-4fe3-b197-5ed049cc8e51
+reason: Sync
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: flux
+type: Normal
+`, `
+apiVersion: v1
+count: 15
+eventTime: null
+firstTimestamp: "2021-02-05T08:48:34Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: StatefulSet
+  name: ingester
+  namespace: cortex
+  resourceVersion: "291777997"
+  uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+kind: Event
+lastTimestamp: "2021-02-17T14:21:02Z"
+message: create Pod ingester-3 in StatefulSet ingester successful
+metadata:
+  creationTimestamp: "2021-02-17T14:21:02Z"
+  name: ingester.1660cdc576ee5fac
+  namespace: cortex
+  resourceVersion: "291778030"
+  selfLink: /api/v1/namespaces/cortex/events/ingester.1660cdc576ee5fac
+  uid: 4354e75b-57a9-4c33-afa6-aa280d865ae7
+reason: SuccessfulCreate
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: statefulset-controller
+type: Normal
+`, `
+action: Binding
+apiVersion: v1
+eventTime: "2021-02-17T14:21:02.722817Z"
+firstTimestamp: null
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  name: ingester-3
+  namespace: cortex
+  resourceVersion: "291778027"
+  uid: 921485ae-aaf1-46f8-b749-d9d23ba338e5
+kind: Event
+lastTimestamp: null
+message: Successfully assigned cortex/ingester-3 to ip-172-20-2-25.ec2.internal
+metadata:
+  creationTimestamp: "2021-02-17T14:21:02Z"
+  name: ingester-3.16648ee0d03aff4f
+  namespace: cortex
+  resourceVersion: "291778031"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-3.16648ee0d03aff4f
+  uid: 373c1184-6f5b-4ef4-9665-2bf49fc8c4e4
+reason: Scheduled
+reportingComponent: default-scheduler
+reportingInstance: default-scheduler-ip-172-20-3-89
+source:
+  component: default-scheduler
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:21:06Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-3
+  namespace: cortex
+  resourceVersion: "291778029"
+  uid: 921485ae-aaf1-46f8-b749-d9d23ba338e5
+kind: Event
+lastTimestamp: "2021-02-17T14:21:06Z"
+message: Container image "cortexproject/cortex:master-a2be3d8" already present on
+  machine
+metadata:
+  creationTimestamp: "2021-02-17T14:21:06Z"
+  name: ingester-3.16648ee1abf439c4
+  namespace: cortex
+  resourceVersion: "291778042"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-3.16648ee1abf439c4
+  uid: 3ced3409-8bcd-4711-82d9-96913b5d62af
+reason: Pulled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-25.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:21:06Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-3
+  namespace: cortex
+  resourceVersion: "291778029"
+  uid: 921485ae-aaf1-46f8-b749-d9d23ba338e5
+kind: Event
+lastTimestamp: "2021-02-17T14:21:06Z"
+message: Created container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:21:06Z"
+  name: ingester-3.16648ee1aff8055e
+  namespace: cortex
+  resourceVersion: "291778044"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-3.16648ee1aff8055e
+  uid: 6fa699ec-51e7-4079-80ec-8be65cd81fa7
+reason: Created
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-25.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:21:06Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-3
+  namespace: cortex
+  resourceVersion: "291778029"
+  uid: 921485ae-aaf1-46f8-b749-d9d23ba338e5
+kind: Event
+lastTimestamp: "2021-02-17T14:21:06Z"
+message: Started container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:21:06Z"
+  name: ingester-3.16648ee1bafe09a9
+  namespace: cortex
+  resourceVersion: "291778045"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-3.16648ee1bafe09a9
+  uid: 41ebd886-c8d9-4359-a84e-81e44d36b02d
+reason: Started
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-25.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:24:10Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-2
+  namespace: cortex
+  resourceVersion: "291595539"
+  uid: 953d4e89-0b3e-419b-a860-72a9c2bc9d1c
+kind: Event
+lastTimestamp: "2021-02-17T14:24:10Z"
+message: Stopping container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:24:10Z"
+  name: ingester-2.16648f0c8744a7b0
+  namespace: cortex
+  resourceVersion: "291778475"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-2.16648f0c8744a7b0
+  uid: 7c05b7c7-c943-4963-9a52-9ba916429fb2
+reason: Killing
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-22.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 7
+eventTime: null
+firstTimestamp: "2021-02-05T11:12:42Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: StatefulSet
+  name: ingester
+  namespace: cortex
+  resourceVersion: "291778028"
+  uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+kind: Event
+lastTimestamp: "2021-02-17T14:24:10Z"
+message: delete Pod ingester-2 in StatefulSet ingester successful
+metadata:
+  creationTimestamp: "2021-02-17T14:24:10Z"
+  name: ingester.1660d5a3006faa13
+  namespace: cortex
+  resourceVersion: "291778476"
+  selfLink: /api/v1/namespaces/cortex/events/ingester.1660d5a3006faa13
+  uid: 6d750ec9-7543-45f4-98e6-92cd3a90fb3a
+reason: SuccessfulDelete
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: statefulset-controller
+type: Normal
+`, `
+action: Binding
+apiVersion: v1
+eventTime: "2021-02-17T14:24:45.413475Z"
+firstTimestamp: null
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  name: ingester-2
+  namespace: cortex
+  resourceVersion: "291778561"
+  uid: 07cb0e28-8791-4cd7-aafa-28edfb8f4388
+kind: Event
+lastTimestamp: null
+message: Successfully assigned cortex/ingester-2 to ip-172-20-2-22.ec2.internal
+metadata:
+  creationTimestamp: "2021-02-17T14:24:45Z"
+  name: ingester-2.16648f14a9a0bec8
+  namespace: cortex
+  resourceVersion: "291778564"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-2.16648f14a9a0bec8
+  uid: dfdc554c-fcda-4fbc-a40e-bf0bae2062f3
+reason: Scheduled
+reportingComponent: default-scheduler
+reportingInstance: default-scheduler-ip-172-20-3-89
+source:
+  component: default-scheduler
+type: Normal
+`, `
+apiVersion: v1
+count: 8
+eventTime: null
+firstTimestamp: "2021-02-04T17:55:29Z"
+involvedObject:
+  apiVersion: apps/v1
+  kind: StatefulSet
+  name: ingester
+  namespace: cortex
+  resourceVersion: "291778533"
+  uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+kind: Event
+lastTimestamp: "2021-02-17T14:24:45Z"
+message: create Pod ingester-2 in StatefulSet ingester successful
+metadata:
+  creationTimestamp: "2021-02-17T14:24:45Z"
+  name: ingester.16609d0927697813
+  namespace: cortex
+  resourceVersion: "291778565"
+  selfLink: /api/v1/namespaces/cortex/events/ingester.16609d0927697813
+  uid: a6e02b56-1f56-46b9-b310-e62bf18431be
+reason: SuccessfulCreate
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: statefulset-controller
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:24:51Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-2
+  namespace: cortex
+  resourceVersion: "291778562"
+  uid: 07cb0e28-8791-4cd7-aafa-28edfb8f4388
+kind: Event
+lastTimestamp: "2021-02-17T14:24:51Z"
+message: Container image "cortexproject/cortex:master-a2be3d8" already present on
+  machine
+metadata:
+  creationTimestamp: "2021-02-17T14:24:51Z"
+  name: ingester-2.16648f160a2154e2
+  namespace: cortex
+  resourceVersion: "291778582"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-2.16648f160a2154e2
+  uid: d2b5ed78-5012-4701-9a3e-a99355bfb42f
+reason: Pulled
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-22.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:24:51Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-2
+  namespace: cortex
+  resourceVersion: "291778562"
+  uid: 07cb0e28-8791-4cd7-aafa-28edfb8f4388
+kind: Event
+lastTimestamp: "2021-02-17T14:24:51Z"
+message: Created container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:24:51Z"
+  name: ingester-2.16648f16100ae6f8
+  namespace: cortex
+  resourceVersion: "291778583"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-2.16648f16100ae6f8
+  uid: a017b612-9a88-4a49-a265-e50e67448d7f
+reason: Created
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-22.ec2.internal
+type: Normal
+`, `
+apiVersion: v1
+count: 1
+eventTime: null
+firstTimestamp: "2021-02-17T14:24:51Z"
+involvedObject:
+  apiVersion: v1
+  fieldPath: spec.containers{ingester}
+  kind: Pod
+  name: ingester-2
+  namespace: cortex
+  resourceVersion: "291778562"
+  uid: 07cb0e28-8791-4cd7-aafa-28edfb8f4388
+kind: Event
+lastTimestamp: "2021-02-17T14:24:51Z"
+message: Started container ingester
+metadata:
+  creationTimestamp: "2021-02-17T14:24:51Z"
+  name: ingester-2.16648f162a53f9e5
+  namespace: cortex
+  resourceVersion: "291778584"
+  selfLink: /api/v1/namespaces/cortex/events/ingester-2.16648f162a53f9e5
+  uid: 76776584-5e9d-492d-83d4-5b75b4494846
+reason: Started
+reportingComponent: ""
+reportingInstance: ""
+source:
+  component: kubelet
+  host: ip-172-20-2-22.ec2.internal
+type: Normal
+`}
+
+var sts1str = `
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    fluxcd.io/sync-checksum: 0b3fbf30ce8e60a021858681d80a0cb2da979394
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"StatefulSet","metadata":{"annotations":{"fluxcd.io/sync-checksum":"0b3fbf30ce8e60a021858681d80a0cb2da979394"},"labels":{"fluxcd.io/sync-gc-mark":"sha256.Ysq-2PNfBo9cDgfOAFO1z5RG34IJB07VIzqR_wzuy1k"},"name":"ingester","namespace":"cortex"},"spec":{"replicas":4,"selector":{"matchLabels":{"name":"ingester"}},"serviceName":"ingester","template":{"metadata":{"annotations":{"iam.amazonaws.com/role":"cortex-blocks-writer"},"labels":{"name":"ingester"}},"spec":{"affinity":{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchLabels":{"name":"ingester"}},"topologyKey":"kubernetes.io/hostname"}]}},"containers":[{"args":["-target=ingester","--log.level=info","-store.engine=blocks","-blocks-storage.backend=s3","-blocks-storage.bucket-store.ignore-deletion-marks-delay=1h","-blocks-storage.bucket-store.sync-dir=/data/tsdb","-blocks-storage.s3.bucket-name=cortex-blocks-dev","-blocks-storage.s3.endpoint=s3.dualstack.us-east-1.amazonaws.com","-blocks-storage.tsdb.block-ranges-period=2h","-blocks-storage.tsdb.dir=/data/tsdb","-blocks-storage.tsdb.retention-period=24h","-blocks-storage.tsdb.ship-interval=1m","-consul.hostname=consul.cortex.svc.cluster.local.:8500","-ingester.join-after=0s","-ingester-client.expected-timeseries=1000","-ingester-client.expected-samples-per-series=1","-ingester.max-series-per-user=300000","-ingester.max-samples-per-query=2000000","-ingester.max-series-per-query=300000","-ingester.num-tokens=128","-ingester.tokens-file-path=/data/tokens","-limits.per-user-override-config=/etc/config/user-overrides.yaml"],"env":[{"name":"GOMAXPROCS","value":"4"},{"name":"GOGC","value":"40"},{"name":"JAEGER_AGENT_HOST","valueFrom":{"fieldRef":{"fieldPath":"status.hostIP"}}},{"name":"JAEGER_SAMPLER_MANAGER_HOST_PORT","value":"http://jaeger-agent.tracing.svc.cluster.local./sampling"}],"image":"cortexproject/cortex:master-813e156","imagePullPolicy":"IfNotPresent","name":"ingester","ports":[{"containerPort":80,"name":"http-metrics"},{"containerPort":9095,"name":"grpc-noscrape"}],"readinessProbe":{"httpGet":{"path":"/ready","port":80},"initialDelaySeconds":15,"timeoutSeconds":1},"resources":{"limits":{"memory":"5Gi"},"requests":{"cpu":"400m","memory":"5Gi"}},"volumeMounts":[{"mountPath":"/data","name":"ingester-pvc"},{"mountPath":"/etc/config","name":"overrides"}]}],"priorityClassName":"ingester","securityContext":{"runAsUser":0},"terminationGracePeriodSeconds":4800,"volumes":[{"name":"ingester-pvc","persistentVolumeClaim":{"claimName":"ingester-pvc"}},{"configMap":{"name":"overrides-config"},"name":"overrides"}]}},"updateStrategy":{"type":"RollingUpdate"},"volumeClaimTemplates":[{"metadata":{"name":"ingester-pvc"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"50Gi"}},"storageClassName":"gp2"}}]}}
+  creationTimestamp: "2021-02-04T17:08:25Z"
+  generation: 10
+  labels:
+    fluxcd.io/sync-gc-mark: sha256.Ysq-2PNfBo9cDgfOAFO1z5RG34IJB07VIzqR_wzuy1k
+  name: ingester
+  namespace: cortex
+  resourceVersion: "291596474"
+  selfLink: /apis/apps/v1/namespaces/cortex/statefulsets/ingester
+  uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 4
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      name: ingester
+  serviceName: ingester
+  template:
+    metadata:
+      labels:
+        name: ingester
+    spec:
+      containers:
+      - args:
+        - -target=ingester
+        image: cortexproject/cortex:master-813e156
+        name: ingester
+        volumeMounts:
+        - mountPath: /data
+          name: ingester-pvc
+        - mountPath: /etc/config
+          name: overrides
+      restartPolicy: Always
+      volumes:
+      - name: ingester-pvc
+        persistentVolumeClaim:
+          claimName: ingester-pvc
+      - configMap:
+          defaultMode: 420
+          name: overrides-config
+        name: overrides
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      creationTimestamp: null
+      name: ingester-pvc
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 50Gi
+      storageClassName: gp2
+      volumeMode: Filesystem
+    status:
+      phase: Pending
+status:
+  collisionCount: 0
+  currentReplicas: 4
+  currentRevision: ingester-77fff6c776
+  observedGeneration: 10
+  readyReplicas: 4
+  replicas: 4
+  updateRevision: ingester-77fff6c776
+  updatedReplicas: 4
+`
+
+const stsPod2str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    iam.amazonaws.com/role: cortex-blocks-writer
+  creationTimestamp: "2021-02-17T14:24:45Z"
+  generateName: ingester-
+  labels:
+    controller-revision-hash: ingester-7cf8dbb565
+    name: ingester
+    statefulset.kubernetes.io/pod-name: ingester-2
+  name: ingester-2
+  namespace: cortex
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: ingester
+    uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+  resourceVersion: "291779005"
+  selfLink: /api/v1/namespaces/cortex/pods/ingester-2
+  uid: 07cb0e28-8791-4cd7-aafa-28edfb8f4388
+spec:
+containers:
+- args:
+  - -target=ingester
+  image: cortexproject/cortex:master-a2be3d8
+  imagePullPolicy: IfNotPresent
+  name: ingester
+  ports:
+  - containerPort: 80
+    name: http-metrics
+    protocol: TCP
+  - containerPort: 9095
+    name: grpc-noscrape
+    protocol: TCP
+  volumeMounts:
+  - mountPath: /data
+    name: ingester-pvc
+  - mountPath: /etc/config
+    name: overrides
+  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    name: default-token-e3ov9
+    readOnly: true
+  hostname: ingester-2
+  nodeName: ip-172-20-2-22.ec2.internal
+  priority: 1000
+  priorityClassName: ingester
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    runAsUser: 0
+  serviceAccount: default
+  serviceAccountName: default
+  subdomain: ingester
+  terminationGracePeriodSeconds: 4800
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: ingester-pvc
+    persistentVolumeClaim:
+      claimName: ingester-pvc-ingester-2
+  - configMap:
+      defaultMode: 420
+      name: overrides-config
+    name: overrides
+  - name: default-token-e3ov9
+    secret:
+      defaultMode: 420
+      secretName: default-token-e3ov9
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:24:45Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:27:58Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:27:58Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:24:45Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://ba937b5bc0b855b8fac7fef27638ee1ebe77a37591a9e4e933775bc687a3bcfb
+    image: cortexproject/cortex:master-a2be3d8
+    imageID: docker-pullable://cortexproject/cortex@sha256:71d6c4e1c1e5efcdfac1c4ae1266ace450d5c29d02568bfd65514336c117fb83
+    lastState: {}
+    name: ingester
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-02-17T14:24:51Z"
+  hostIP: 172.20.2.22
+  phase: Running
+  podIP: 10.244.228.33
+  podIPs:
+  - ip: 10.244.228.33
+  qosClass: Burstable
+  startTime: "2021-02-17T14:24:45Z"
+`
+
+const stsPod3str = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    iam.amazonaws.com/role: cortex-blocks-writer
+  creationTimestamp: "2021-02-17T14:21:02Z"
+  generateName: ingester-
+  labels:
+    controller-revision-hash: ingester-7cf8dbb565
+    name: ingester
+    statefulset.kubernetes.io/pod-name: ingester-3
+  name: ingester-3
+  namespace: cortex
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: ingester
+    uid: ded43c86-942a-4d5d-94ed-4505b4c02eb5
+  resourceVersion: "291778472"
+  selfLink: /api/v1/namespaces/cortex/pods/ingester-3
+  uid: 921485ae-aaf1-46f8-b749-d9d23ba338e5
+spec:
+  containers:
+  - args:
+    - -target=ingester
+    image: cortexproject/cortex:master-a2be3d8
+    imagePullPolicy: IfNotPresent
+    name: ingester
+    ports:
+    - containerPort: 80
+      name: http-metrics
+      protocol: TCP
+    - containerPort: 9095
+      name: grpc-noscrape
+      protocol: TCP
+    volumeMounts:
+    - mountPath: /data
+      name: ingester-pvc
+    - mountPath: /etc/config
+      name: overrides
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-e3ov9
+      readOnly: true
+  hostname: ingester-3
+  nodeName: ip-172-20-2-25.ec2.internal
+  priority: 1000
+  priorityClassName: ingester
+  restartPolicy: Always
+  subdomain: ingester
+  terminationGracePeriodSeconds: 4800
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: ingester-pvc
+    persistentVolumeClaim:
+      claimName: ingester-pvc-ingester-3
+  - configMap:
+      defaultMode: 420
+      name: overrides-config
+    name: overrides
+  - name: default-token-e3ov9
+    secret:
+      defaultMode: 420
+      secretName: default-token-e3ov9
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:21:02Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:24:10Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:24:10Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-02-17T14:21:02Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://327d16ab1bda5d9f599735916b34cf6d3b2616cfd74c624a8368d6742ced1e6d
+    image: cortexproject/cortex:master-a2be3d8
+    imageID: docker-pullable://cortexproject/cortex@sha256:71d6c4e1c1e5efcdfac1c4ae1266ace450d5c29d02568bfd65514336c117fb83
+    lastState: {}
+    name: ingester
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2021-02-17T14:21:06Z"
+  hostIP: 172.20.2.25
+  phase: Running
+  podIP: 10.244.226.98
+  podIPs:
+  - ip: 10.244.226.98
+  qosClass: Burstable
+  startTime: "2021-02-17T14:21:02Z"
+`

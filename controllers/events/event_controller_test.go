@@ -200,3 +200,55 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 		})
 	}
 }
+
+func TestStsRolloutFromFlux(t *testing.T) {
+	g := o.NewWithT(t)
+
+	var (
+		sts1       unstructured.Unstructured
+		pod2, pod3 unstructured.Unstructured
+	)
+	mustParse(t, sts1str, &sts1)
+	mustParse(t, stsPod2str, &pod2)
+	mustParse(t, stsPod3str, &pod3)
+
+	tests := []struct {
+		name       string
+		perm       []int
+		wantTraces []string
+	}{
+		{
+			name: "flux-sts",
+			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+			wantTraces: []string{
+				"0: flux statefulset.Sync Commit fc4e825b46ac: Update ingester to latest, in dev",
+				"1: statefulset-controller StatefulSet.SuccessfulDelete (0) delete Pod ingester-3 in StatefulSet ingester successful",
+				"2: kubelet Pod.Killing (1) Stopping container ingester",
+				"3: statefulset-controller StatefulSet.SuccessfulCreate (0) create Pod ingester-3 in StatefulSet ingester successful",
+				"4: default-scheduler Pod.Scheduled (3) Successfully assigned cortex/ingester-3 to ip-172-20-2-25.ec2.internal",
+				"5: kubelet Pod.Pulled (3) Container image \"cortexproject/cortex:master-a2be3d8\" already present on machine",
+				"6: kubelet Pod.Created (3) Created container ingester",
+				"7: kubelet Pod.Started (3) Started container ingester",
+				"8: kubelet Pod.Killing (0) Stopping container ingester",
+				"9: statefulset-controller StatefulSet.SuccessfulDelete (0) delete Pod ingester-2 in StatefulSet ingester successful",
+				"10: default-scheduler Pod.Scheduled (9) Successfully assigned cortex/ingester-2 to ip-172-20-2-22.ec2.internal",
+				"11: statefulset-controller StatefulSet.SuccessfulCreate (0) create Pod ingester-2 in StatefulSet ingester successful",
+				"12: kubelet Pod.Pulled (11) Container image \"cortexproject/cortex:master-a2be3d8\" already present on machine",
+				"13: kubelet Pod.Created (11) Created container ingester",
+				"14: kubelet Pod.Started (11) Started container ingester",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, r, exporter, log := newTestEventWatcher(&sts1, &pod2, &pod3)
+			defer r.stop()
+			for _, index := range tt.perm {
+				var event corev1.Event
+				mustParse(t, stsUpdateEvents[index], &event)
+				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+			}
+			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
+		})
+	}
+}
