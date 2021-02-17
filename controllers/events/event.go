@@ -25,6 +25,21 @@ func (p actionReference) String() string {
 	return fmt.Sprintf("actor: %s, object: %s", p.actor, p.object) // TODO improve this
 }
 
+// look for the string 'marker' in 'message' and return the following space-separated word.
+// if anything goes wrong, return an empty string.
+func extractWordAfter(message, marker string) string {
+	pos := strings.Index(message, marker)
+	if pos == -1 {
+		return ""
+	}
+	pos += len(marker)
+	end := strings.IndexByte(message[pos:], ' ')
+	if end == -1 {
+		return ""
+	}
+	return message[pos : pos+end]
+}
+
 // Get the object relating to an event, after applying some heuristics
 // or a blank struct if this can't be done
 func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, actionReference, error) {
@@ -40,20 +55,12 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 	switch {
 	case event.Source.Component == "deployment-controller" && event.InvolvedObject.Kind == "Deployment":
 		// if we have a message like "Scaled down replica set foobar-7ff854f459 to 0"; extract the ReplicaSet name
-		marker := "replica set "
-		pos := strings.Index(event.Message, marker)
-		if pos == -1 {
-			break
-		}
-		pos += len(marker)
-		end := strings.IndexByte(event.Message[pos:], ' ')
-		if end == -1 {
+		name := extractWordAfter(event.Message, "replica set ")
+		if name == "" {
 			break
 		}
 		ret.actor = ret.object
-		ret.object.Kind = "replicaset"
-		ret.object.Namespace = lc(ret.object.Namespace)
-		ret.object.Name = lc(event.Message[pos : pos+end])
+		ret.object = objectReference{Kind: "replicaset", Namespace: lc(ret.object.Namespace), Name: lc(name)}
 	}
 
 	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
