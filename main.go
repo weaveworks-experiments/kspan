@@ -47,10 +47,10 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-func SetupOTLP(serviceName string) (tracesdk.SpanExporter, error) {
+func setupOTLP(collectorAddr, serviceName string) (tracesdk.SpanExporter, error) {
 	exp, err := otlp.NewExporter(
 		otlp.WithInsecure(),
-		otlp.WithAddress("otlp-collector.default:55680"),
+		otlp.WithAddress(collectorAddr),
 	)
 	if err != nil {
 		return nil, err
@@ -61,12 +61,14 @@ func SetupOTLP(serviceName string) (tracesdk.SpanExporter, error) {
 
 func main() {
 	var metricsAddr string
+	var collectorAddr string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&collectorAddr, "otlp-addr", "otlp-collector.default:55680", "Address to send traces to")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	spanExporter, err := SetupOTLP("events")
+	spanExporter, err := setupOTLP(collectorAddr, "events")
 	if err != nil {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
