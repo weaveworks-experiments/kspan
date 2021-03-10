@@ -84,8 +84,16 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		label.String("kind", event.InvolvedObject.Kind),
 		label.String("namespace", event.InvolvedObject.Namespace),
 		label.String("name", event.InvolvedObject.Name),
-		label.String("message", event.Message),
-		label.String("eventID", event.Namespace+"/"+event.Name),
+	}
+
+	if event.Reason != "" {
+		attrs = append(attrs, label.String("reason", event.Reason))
+	}
+	if event.Message != "" {
+		attrs = append(attrs, label.String("message", event.Message)) // maybe this should be a log?
+	}
+	if event.Name != "" {
+		attrs = append(attrs, label.String("eventID", event.Namespace+"/"+event.Name))
 	}
 
 	return &tracesdk.SpanData{
