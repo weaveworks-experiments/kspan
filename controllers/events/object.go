@@ -37,7 +37,7 @@ func (r objectReference) blank() bool {
 }
 
 // Given an object, come up with some source for the change, and the time it happened
-func getUpdateSource(obj v1.Object) (source string, operation string, ts time.Time) {
+func getUpdateSource(obj v1.Object, subFields ...string) (source string, operation string, ts time.Time) {
 	// If it has managed fields, return the newest change that updated the spec
 	for _, mf := range obj.GetManagedFields() {
 		var fields map[string]interface{}
@@ -45,7 +45,7 @@ func getUpdateSource(obj v1.Object) (source string, operation string, ts time.Ti
 		if err != nil {
 			continue
 		}
-		if _, found := fields["f:spec"]; found && mf.Time.Time.After(ts) {
+		if _, found, _ := unstructured.NestedFieldNoCopy(fields, subFields...); found && mf.Time.Time.After(ts) {
 			ts = mf.Time.Time
 			source = mf.Manager
 			operation = string(mf.Operation)
@@ -66,7 +66,7 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 		return nil, err
 	}
 
-	updateSource, operation, updateTime := getUpdateSource(m)
+	updateSource, operation, updateTime := getUpdateSource(m, "f:spec")
 	res := r.getResource(source{name: updateSource})
 
 	if updateTime.IsZero() { // We didn't find a time in the object

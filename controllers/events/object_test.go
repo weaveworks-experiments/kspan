@@ -44,7 +44,7 @@ func Test_getUpdateSource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var obj unstructured.Unstructured
 			g.Expect(yaml.Unmarshal([]byte(tt.objYaml), &obj)).To(o.Succeed())
-			gotSource, gotOperation, gotTs := getUpdateSource(&obj)
+			gotSource, gotOperation, gotTs := getUpdateSource(&obj, "f:spec")
 			g.Expect(gotSource).To(o.BeIdenticalTo(tt.wantSource))
 			g.Expect(gotOperation).To(o.BeIdenticalTo(tt.wantOperation))
 			g.Expect(gotTs.Equal(tt.wantTs)).To(o.BeTrue())
