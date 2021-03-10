@@ -69,12 +69,12 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod0, &pod1)
+			ctx, r, exporter, _ := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod0, &pod1)
 			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, deploymentUpdateEvents[index], &event)
-				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
@@ -139,12 +139,12 @@ func Test2PodDeploymentRollout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, r, exporter, log := newTestEventWatcher(&deploy2, &rs1, &rs2, &pod1, &pod2, &pod3, &pod4)
+			ctx, r, exporter, _ := newTestEventWatcher(&deploy2, &rs1, &rs2, &pod1, &pod2, &pod3, &pod4)
 			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, p2deploymentUpdateEvents[index], &event)
-				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
@@ -189,12 +189,12 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, r, exporter, log := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
+			ctx, r, exporter, _ := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
 			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, fluxDeploymentUpdateEvents[index], &event)
-				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
@@ -241,12 +241,12 @@ func TestStsRolloutFromFlux(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, r, exporter, log := newTestEventWatcher(&sts1, &pod2, &pod3)
+			ctx, r, exporter, _ := newTestEventWatcher(&sts1, &pod2, &pod3)
 			defer r.stop()
 			for _, index := range tt.perm {
 				var event corev1.Event
 				mustParse(t, stsUpdateEvents[index], &event)
-				g.Expect(r.handleEvent(ctx, log, &event)).To(o.Succeed())
+				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})

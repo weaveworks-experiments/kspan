@@ -84,7 +84,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
-	err := r.handleEvent(ctx, log, &event)
+	err := r.handleEvent(ctx, &event)
 	if err != nil {
 		log.Error(err, "unable to handle event")
 	}
@@ -101,7 +101,8 @@ func isNotFound(err error) bool {
 }
 
 // handleEvent is the meat of Reconcile, broken out for ease of testing.
-func (r *EventWatcher) handleEvent(ctx context.Context, log logr.Logger, event *corev1.Event) error {
+func (r *EventWatcher) handleEvent(ctx context.Context, event *corev1.Event) error {
+	log := r.Log.WithValues("event", event.Namespace+"/"+event.Name)
 	log.Info("event", "kind", event.InvolvedObject.Kind, "reason", event.Reason, "source", event.Source.Component)
 
 	emitted, err := r.emitSpanFromEvent(ctx, log, event)
