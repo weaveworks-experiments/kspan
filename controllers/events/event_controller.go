@@ -33,7 +33,7 @@ type EventWatcher struct {
 	Exporter  tracesdk.SpanExporter
 	ticker    *time.Ticker
 	startTime time.Time
-	recent    recentInfoStore
+	recent    *recentInfoStore
 	pending   []*corev1.Event
 	resources map[source]*resource.Resource
 }
@@ -150,7 +150,7 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 	}
 	if !success {
 		// If the involved object (or its owner) maps to recent activity, make a span parented off that.
-		remoteContext, err = recentSpanContextFromObject(ctx, involved, &r.recent)
+		remoteContext, err = recentSpanContextFromObject(ctx, involved, r.recent)
 		if err != nil {
 			return false, err
 		}
@@ -220,7 +220,7 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 
 func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
 	// See if we have any recent relevant event
-	if sc, err := recentSpanContextFromObject(ctx, obj, &r.recent); err != nil || sc.HasTraceID() {
+	if sc, err := recentSpanContextFromObject(ctx, obj, r.recent); err != nil || sc.HasTraceID() {
 		return sc, err
 	}
 

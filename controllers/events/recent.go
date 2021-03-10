@@ -27,8 +27,8 @@ type recentInfo struct {
 	parentContext trace.SpanContext
 }
 
-func newRecentInfoStore() recentInfoStore {
-	return recentInfoStore{
+func newRecentInfoStore() *recentInfoStore {
+	return &recentInfoStore{
 		recentWindow: defaultRecentWindow,
 		expireAfter:  defaultExpireAfter,
 		info:         make(map[actionReference]recentInfo),
