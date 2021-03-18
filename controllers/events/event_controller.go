@@ -84,6 +84,8 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
+	adjustEventTime(&event, time.Now())
+
 	err := r.handleEvent(ctx, &event)
 	if err != nil {
 		log.Error(err, "unable to handle event")
