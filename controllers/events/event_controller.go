@@ -128,8 +128,8 @@ func (r *EventWatcher) handleEvent(ctx context.Context, event *corev1.Event) err
 
 // If our rules tell us to map this event immediately to a context, do that.
 func mapEventDirectlyToContext(ctx context.Context, client client.Client, event *corev1.Event, involved runtime.Object) (success bool, remoteContext trace.SpanContext, err error) {
-	// Special case: A flux sync event can be the top level trigger
-	if event.Source.Component == "flux" && event.Reason == "Sync" {
+	// The controller that issued this event has marked it as top-level
+	if event.Annotations["topLevelSpan"] == "true" {
 		m, _ := meta.Accessor(involved)
 		remoteContext.TraceID = objectToTraceID(m)
 		success = true

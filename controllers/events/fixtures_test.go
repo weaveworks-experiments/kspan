@@ -1055,6 +1055,7 @@ var fluxDeploymentUpdateEvents = []string{`
   message: 'Commit e332e7bac962: Update nginx'
   metadata:
     annotations:
+      topLevelSpan: 'true'
       syncMetadata: '{"commits":[{"revision":"e332e7bac962bc5601d64fc9c382e3b5a09f96f0","message":"Update nginx"}],"includes":{"other":true}}'
     creationTimestamp: "2020-12-03T17:53:52Z"
     name: hello-world.164d4662cc294a22
@@ -3729,6 +3730,7 @@ lastTimestamp: "2021-02-17T14:20:30Z"
 message: 'Commit fc4e825b46ac: Update ingester to latest, in dev'
 metadata:
   annotations:
+    topLevelSpan: 'true'
     syncMetadata: '{"commits":[{"revision":"fc4e825b46ac659138e227c6110f615ab89a5ecb","message":"Update
       ingester to latest, in dev"}],"includes":{"other":true}}'
   creationTimestamp: "2021-02-17T14:20:30Z"
