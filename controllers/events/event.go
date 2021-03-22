@@ -125,6 +125,16 @@ func eventToSpanID(event *corev1.Event) trace.SpanID {
 	return h
 }
 
+// If time has zero ms, and is close to wall-clock time, use wall-clock time
+func adjustEventTime(event *corev1.Event, now time.Time) {
+	if event.LastTimestamp.Time.IsZero() {
+		return
+	}
+	if event.LastTimestamp.Time.Nanosecond() == 0 && now.Sub(event.LastTimestamp.Time) < time.Second {
+		event.LastTimestamp.Time = now
+	}
+}
+
 // Some events have just an EventTime; if LastTimestamp is present we prefer that.
 func eventTime(event *corev1.Event) time.Time {
 	if !event.LastTimestamp.Time.IsZero() {

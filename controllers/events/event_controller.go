@@ -36,6 +36,7 @@ type EventWatcher struct {
 	recent    *recentInfoStore
 	pending   []*corev1.Event
 	resources map[source]*resource.Resource
+	outgoing  *outgoing
 }
 
 // Info about the source of an event, e.g. kubelet
@@ -83,6 +84,8 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
+
+	adjustEventTime(&event, time.Now())
 
 	err := r.handleEvent(ctx, &event)
 	if err != nil {
@@ -163,15 +166,10 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 
 	// Send out a span from the event details
 	span := r.eventToSpan(event, remoteContext)
-	r.emitSpan(ctx, span)
+	r.emitSpan(ctx, ref.object, span)
 	r.recent.store(ref, remoteContext, span.SpanContext)
 
 	return true, nil
-}
-
-func (r *EventWatcher) emitSpan(ctx context.Context, span *tracesdk.SpanData) {
-	// TODO: consider building up all the spans then sending in one go
-	r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
 }
 
 func (r *EventWatcher) getResource(s source) *resource.Resource {
@@ -252,7 +250,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 		if err != nil {
 			return noTrace, err
 		}
-		r.emitSpan(ctx, spanData)
+		r.emitSpan(ctx, ref.object, spanData)
 		r.recent.store(ref, noTrace, spanData.SpanContext)
 		return spanData.SpanContext, nil
 	}
@@ -268,6 +266,7 @@ func (r *EventWatcher) runTicker() {
 			r.Log.Error(err, "from checkOlderPending")
 		}
 		r.recent.expire()
+		r.flushOutgoing(context.Background(), time.Now().Add(-2*r.recent.recentWindow))
 	}
 }
 
@@ -276,6 +275,7 @@ func (r *EventWatcher) initialize() {
 	r.startTime = time.Now()
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
+	r.outgoing = newOutgoing()
 	r.Unlock()
 	go r.runTicker()
 }

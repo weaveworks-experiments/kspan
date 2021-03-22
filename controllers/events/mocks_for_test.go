@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel/api/trace"
@@ -49,6 +50,7 @@ func (f *fakeExporter) reset() {
 }
 
 func (f *fakeExporter) dump() []string {
+	f.sort()
 	spanMap := make(map[trace.SpanID]int)
 	for i, d := range f.spanData {
 		spanMap[d.SpanContext.SpanID] = i
@@ -85,4 +87,78 @@ func labelValue(labels []label.KeyValue, key label.Key) string {
 		}
 	}
 	return ""
+}
+
+// Sort the captured spans so they are in a predictable order to check expected output.
+// Use depth-first search, with edges ordered by start-time where those differ.
+func (f *fakeExporter) sort() {
+	sort.Stable(SortableSpans(f.spanData))
+
+	// Make a map from span-id to index in the set
+	spanMap := make(map[trace.SpanID]int)
+	for i, d := range f.spanData {
+		spanMap[d.SpanContext.SpanID] = i
+	}
+
+	// Prepare vertexes for depth-first sort
+	v := make([]*vertex, len(f.spanData))
+	for i := range f.spanData {
+		v[i] = &vertex{value: i}
+	}
+	topSpan := -1
+	for i, s := range f.spanData {
+		if s.ParentSpanID.IsValid() {
+			p := spanMap[s.ParentSpanID]
+			v[p].connect(v[i])
+		} else {
+			if topSpan != -1 {
+				panic("More than one top span")
+			}
+			topSpan = i
+		}
+	}
+
+	sortedSpans := make([]*tracesdk.SpanData, 0, len(f.spanData))
+	t := dfs{
+		visit: func(v *vertex) {
+			sortedSpans = append(sortedSpans, f.spanData[v.value])
+		},
+	}
+	t.walk(v[topSpan])
+
+	f.spanData = sortedSpans
+}
+
+// SortableSpans attaches the methods of sort.Interface to []*tracesdk.SpanData, sorting by start time.
+type SortableSpans []*tracesdk.SpanData
+
+func (x SortableSpans) Len() int           { return len(x) }
+func (x SortableSpans) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x SortableSpans) Less(i, j int) bool { return x[i].StartTime.Before(x[j].StartTime) }
+
+// Single-use DFS implementation.
+// Not using one from a library; see https://github.com/gonum/gonum/issues/1595
+type vertex struct {
+	visited    bool
+	value      int
+	neighbours []*vertex
+}
+
+func (v *vertex) connect(vertex *vertex) {
+	v.neighbours = append(v.neighbours, vertex)
+}
+
+type dfs struct {
+	visit func(*vertex)
+}
+
+func (d *dfs) walk(vertex *vertex) {
+	if vertex.visited {
+		return
+	}
+	vertex.visited = true
+	d.visit(vertex)
+	for _, v := range vertex.neighbours {
+		d.walk(v)
+	}
 }

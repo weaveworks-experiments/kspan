@@ -70,7 +70,7 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 		}
 		if success {
 			span := r.eventToSpan(event, remoteContext)
-			r.emitSpan(ctx, span)
+			r.emitSpan(ctx, ref.object, span)
 			r.recent.store(ref, remoteContext, span.SpanContext)
 		}
 	}
