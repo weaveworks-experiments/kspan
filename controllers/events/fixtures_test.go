@@ -3659,6 +3659,9 @@ status:
   updatedReplicas: 2
 `
 
+// 2 seconds after the last event time
+const stsUpdateEventsThresholdStr = "2021-02-17T14:24:53Z"
+
 // Events from a Flux StatefulSet update from one version to another
 var stsUpdateEvents = []string{`
 apiVersion: v1
