@@ -42,8 +42,8 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 				"5: kubelet Pod.Created (2) Created container hello-world",
 				"6: kubelet Pod.Started (2) Started container hello-world",
 				"7: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
-				"8: kubelet Pod.Killing (7) Stopping container hello-world",
-				"9: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
+				"9: kubelet Pod.Killing (7) Stopping container hello-world",
 			},
 		},
 		{
@@ -52,14 +52,14 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 			wantTraces: []string{
 				"0: kubectl deployment.Update ",
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-6b9d85fbd6 to 1",
-				"2: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
-				"3: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
-				"4: default-scheduler Pod.Scheduled (3) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
-				"5: kubelet Pod.Pulled (3) Container image \"nginx:1.19.2-alpine\" already present on machine",
-				"6: kubelet Pod.Created (3) Created container hello-world",
-				"7: kubelet Pod.Started (3) Started container hello-world",
-				"8: kubelet Pod.Killing (2) Stopping container hello-world",
-				"9: replicaset-controller ReplicaSet.SuccessfulDelete (2) Deleted pod: hello-world-7ff854f459-kl4hq",
+				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-6b9d85fbd6-klpv2",
+				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-6b9d85fbd6-klpv2 to kind-control-plane",
+				"4: kubelet Pod.Pulled (2) Container image \"nginx:1.19.2-alpine\" already present on machine",
+				"5: kubelet Pod.Created (2) Created container hello-world",
+				"6: kubelet Pod.Started (2) Started container hello-world",
+				"7: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set hello-world-7ff854f459 to 0",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (7) Deleted pod: hello-world-7ff854f459-kl4hq",
+				"9: kubelet Pod.Killing (7) Stopping container hello-world",
 			},
 		},
 	}
@@ -77,6 +77,7 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
+			r.flushOutgoing(ctx, threshold)
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
 	}
@@ -113,23 +114,23 @@ func Test2PodDeploymentRollout(t *testing.T) {
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set bryan-podinfo-5c5df9754b to 1",
 				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: bryan-podinfo-5c5df9754b-4w2hj",
 				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/bryan-podinfo-5c5df9754b-4w2hj to kind-control-plane",
-				"4: replicaset-controller ReplicaSet.SuccessfulDelete (0) Deleted pod: bryan-podinfo-787c9986b5-tkd9p",
-				"5: kubelet Pod.Killing (4) Stopping container podinfod",
-				"6: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 1",
-				"7: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set bryan-podinfo-5c5df9754b to 2",
-				"8: replicaset-controller ReplicaSet.SuccessfulCreate (7) Created pod: bryan-podinfo-5c5df9754b-bhj4w",
-				"9: default-scheduler Pod.Scheduled (8) Successfully assigned default/bryan-podinfo-5c5df9754b-bhj4w to kind-control-plane",
-				"10: kubelet Pod.Pulling (2) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
-				"11: kubelet Pod.Pulling (8) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
-				"12: kubelet Pod.Pulled (2) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 7.556422631s",
-				"13: kubelet Pod.Created (2) Created container podinfod",
-				"14: kubelet Pod.Started (2) Started container podinfod",
-				"15: kubelet Pod.Pulled (8) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 8.129591184s",
-				"16: kubelet Pod.Created (8) Created container podinfod",
-				"17: kubelet Pod.Started (8) Started container podinfod",
-				"18: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 0",
-				"19: kubelet Pod.Killing (4) Stopping container podinfod", // Ideally this would come after 20
-				"20: replicaset-controller ReplicaSet.SuccessfulDelete (18) Deleted pod: bryan-podinfo-787c9986b5-fws9t",
+				"4: kubelet Pod.Pulling (2) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
+				"5: kubelet Pod.Pulled (2) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 7.556422631s",
+				"6: kubelet Pod.Created (2) Created container podinfod",
+				"7: kubelet Pod.Started (2) Started container podinfod",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (0) Deleted pod: bryan-podinfo-787c9986b5-tkd9p",
+				"9: kubelet Pod.Killing (8) Stopping container podinfod",
+				"10: kubelet Pod.Killing (8) Stopping container podinfod", // Ideally this would come after 20
+				"11: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set bryan-podinfo-5c5df9754b to 2",
+				"12: replicaset-controller ReplicaSet.SuccessfulCreate (11) Created pod: bryan-podinfo-5c5df9754b-bhj4w",
+				"13: default-scheduler Pod.Scheduled (12) Successfully assigned default/bryan-podinfo-5c5df9754b-bhj4w to kind-control-plane",
+				"14: kubelet Pod.Pulling (12) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
+				"15: kubelet Pod.Pulled (12) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 8.129591184s",
+				"16: kubelet Pod.Created (12) Created container podinfod",
+				"17: kubelet Pod.Started (12) Started container podinfod",
+				"18: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 1",
+				"19: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 0",
+				"20: replicaset-controller ReplicaSet.SuccessfulDelete (19) Deleted pod: bryan-podinfo-787c9986b5-fws9t",
 			},
 		},
 	}
@@ -147,6 +148,7 @@ func Test2PodDeploymentRollout(t *testing.T) {
 				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
 			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
+			r.flushOutgoing(ctx, threshold)
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
 	}
@@ -187,6 +189,9 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 			},
 		},
 	}
+	threshold, err := time.Parse(time.RFC3339, fluxDeploymentUpdateEventsThresholdStr)
+	g.Expect(err).NotTo(o.HaveOccurred())
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, r, exporter, _ := newTestEventWatcher(&deploy1, &rs1, &rs2, &pod1)
@@ -196,6 +201,8 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 				mustParse(t, fluxDeploymentUpdateEvents[index], &event)
 				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
+			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
+			r.flushOutgoing(ctx, threshold)
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
 	}
@@ -239,6 +246,9 @@ func TestStsRolloutFromFlux(t *testing.T) {
 			},
 		},
 	}
+	threshold, err := time.Parse(time.RFC3339, stsUpdateEventsThresholdStr)
+	g.Expect(err).NotTo(o.HaveOccurred())
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, r, exporter, _ := newTestEventWatcher(&sts1, &pod2, &pod3)
@@ -248,6 +258,8 @@ func TestStsRolloutFromFlux(t *testing.T) {
 				mustParse(t, stsUpdateEvents[index], &event)
 				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
 			}
+			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
+			r.flushOutgoing(ctx, threshold)
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))
 		})
 	}

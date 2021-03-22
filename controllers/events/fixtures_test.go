@@ -955,6 +955,9 @@ status:
   qosClass: BestEffort
 `
 
+// 2 seconds after the last event time
+const fluxDeploymentUpdateEventsThresholdStr = "2020-12-03T17:53:59Z"
+
 // Events from a Deployment update triggered by Flux; objects have no managedFields
 var fluxDeploymentUpdateEvents = []string{`
   apiVersion: v1
