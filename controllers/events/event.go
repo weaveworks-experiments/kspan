@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	corev1 "k8s.io/api/core/v1"
@@ -80,7 +81,6 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 	res := r.getResource(eventSource(event))
 
 	attrs := []label.KeyValue{
-		label.String("type", event.Type),
 		label.String("kind", event.InvolvedObject.Kind),
 		label.String("namespace", event.InvolvedObject.Namespace),
 		label.String("name", event.InvolvedObject.Name),
@@ -96,6 +96,11 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		attrs = append(attrs, label.String("eventID", event.Namespace+"/"+event.Name))
 	}
 
+	statusCode := codes.Ok
+	if event.Type != corev1.EventTypeNormal {
+		statusCode = codes.Error
+	}
+
 	return &tracesdk.SpanData{
 		SpanContext: trace.SpanContext{
 			TraceID: remoteContext.TraceID,
@@ -107,6 +112,7 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		StartTime:       eventTime(event),
 		EndTime:         eventTime(event),
 		Attributes:      attrs,
+		StatusCode:      statusCode,
 		HasRemoteParent: true,
 		Resource:        res,
 		//InstrumentationLibrary instrumentation.Library
