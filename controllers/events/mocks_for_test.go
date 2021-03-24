@@ -6,10 +6,10 @@ import (
 	"sort"
 
 	"github.com/go-logr/logr"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -42,36 +42,36 @@ func newFakeExporter() *fakeExporter {
 
 // records spans sent to it, for testing purposes
 type fakeExporter struct {
-	spanData []*tracesdk.SpanData
+	SpanSnapshot []*tracesdk.SpanSnapshot
 }
 
 func (f *fakeExporter) reset() {
-	f.spanData = nil
+	f.SpanSnapshot = nil
 }
 
 func (f *fakeExporter) dump() []string {
 	f.sort()
 	spanMap := make(map[trace.SpanID]int)
-	for i, d := range f.spanData {
-		spanMap[d.SpanContext.SpanID] = i
+	for i, d := range f.SpanSnapshot {
+		spanMap[d.SpanContext.SpanID()] = i
 	}
 	var ret []string
-	for i, d := range f.spanData {
+	for i, d := range f.SpanSnapshot {
 		parent, found := spanMap[d.ParentSpanID]
 		var parentStr string
 		if found {
 			parentStr = fmt.Sprintf(" (%d)", parent)
 		}
-		message := labelValue(d.Attributes, label.Key("message"))
-		resourceName := labelValue(d.Resource.Attributes(), semconv.ServiceNameKey)
+		message := attributeValue(d.Attributes, attribute.Key("message"))
+		resourceName := attributeValue(d.Resource.Attributes(), semconv.ServiceNameKey)
 		ret = append(ret, fmt.Sprintf("%d: %s %s%s %s", i, resourceName, d.Name, parentStr, message))
 	}
 	return ret
 }
 
 // ExportSpans implements trace.SpanExporter
-func (f *fakeExporter) ExportSpans(ctx context.Context, spanData []*tracesdk.SpanData) error {
-	f.spanData = append(f.spanData, spanData...)
+func (f *fakeExporter) ExportSpans(ctx context.Context, SpanSnapshot []*tracesdk.SpanSnapshot) error {
+	f.SpanSnapshot = append(f.SpanSnapshot, SpanSnapshot...)
 	return nil
 }
 
@@ -80,8 +80,8 @@ func (f *fakeExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func labelValue(labels []label.KeyValue, key label.Key) string {
-	for _, lbl := range labels {
+func attributeValue(attributes []attribute.KeyValue, key attribute.Key) string {
+	for _, lbl := range attributes {
 		if lbl.Key == key {
 			return lbl.Value.AsString()
 		}
@@ -92,21 +92,21 @@ func labelValue(labels []label.KeyValue, key label.Key) string {
 // Sort the captured spans so they are in a predictable order to check expected output.
 // Use depth-first search, with edges ordered by start-time where those differ.
 func (f *fakeExporter) sort() {
-	sort.Stable(SortableSpans(f.spanData))
+	sort.Stable(SortableSpans(f.SpanSnapshot))
 
 	// Make a map from span-id to index in the set
 	spanMap := make(map[trace.SpanID]int)
-	for i, d := range f.spanData {
-		spanMap[d.SpanContext.SpanID] = i
+	for i, d := range f.SpanSnapshot {
+		spanMap[d.SpanContext.SpanID()] = i
 	}
 
 	// Prepare vertexes for depth-first sort
-	v := make([]*vertex, len(f.spanData))
-	for i := range f.spanData {
+	v := make([]*vertex, len(f.SpanSnapshot))
+	for i := range f.SpanSnapshot {
 		v[i] = &vertex{value: i}
 	}
 	topSpan := -1
-	for i, s := range f.spanData {
+	for i, s := range f.SpanSnapshot {
 		if s.ParentSpanID.IsValid() {
 			p := spanMap[s.ParentSpanID]
 			v[p].connect(v[i])
@@ -118,19 +118,19 @@ func (f *fakeExporter) sort() {
 		}
 	}
 
-	sortedSpans := make([]*tracesdk.SpanData, 0, len(f.spanData))
+	sortedSpans := make([]*tracesdk.SpanSnapshot, 0, len(f.SpanSnapshot))
 	t := dfs{
 		visit: func(v *vertex) {
-			sortedSpans = append(sortedSpans, f.spanData[v.value])
+			sortedSpans = append(sortedSpans, f.SpanSnapshot[v.value])
 		},
 	}
 	t.walk(v[topSpan])
 
-	f.spanData = sortedSpans
+	f.SpanSnapshot = sortedSpans
 }
 
-// SortableSpans attaches the methods of sort.Interface to []*tracesdk.SpanData, sorting by start time.
-type SortableSpans []*tracesdk.SpanData
+// SortableSpans attaches the methods of sort.Interface to []*tracesdk.SpanSnapshot, sorting by start time.
+type SortableSpans []*tracesdk.SpanSnapshot
 
 func (x SortableSpans) Len() int           { return len(x) }
 func (x SortableSpans) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }

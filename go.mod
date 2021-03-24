@@ -10,10 +10,12 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
-	go.opentelemetry.io/otel v0.13.0
-	go.opentelemetry.io/otel/exporters/otlp v0.13.0
-	go.opentelemetry.io/otel/sdk v0.13.0
+	go.opentelemetry.io/otel v0.19.0
+	go.opentelemetry.io/otel/exporters/otlp v0.19.0
+	go.opentelemetry.io/otel/sdk v0.19.0
+	go.opentelemetry.io/otel/trace v0.19.0
 	go.uber.org/atomic v1.4.0 // indirect
+	google.golang.org/grpc v1.36.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	k8s.io/api v0.17.9
 	k8s.io/apimachinery v0.17.9

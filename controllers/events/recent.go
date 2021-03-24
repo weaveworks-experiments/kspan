@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (

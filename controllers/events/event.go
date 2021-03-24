@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/label"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,24 +76,24 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 	return involved, ret, err
 }
 
-func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanData {
+func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanSnapshot {
 	// resource says which component the span is seen as coming from
 	res := r.getResource(eventSource(event))
 
-	attrs := []label.KeyValue{
-		label.String("kind", event.InvolvedObject.Kind),
-		label.String("namespace", event.InvolvedObject.Namespace),
-		label.String("name", event.InvolvedObject.Name),
+	attrs := []attribute.KeyValue{
+		attribute.String("kind", event.InvolvedObject.Kind),
+		attribute.String("namespace", event.InvolvedObject.Namespace),
+		attribute.String("object", event.InvolvedObject.Name),
 	}
 
 	if event.Reason != "" {
-		attrs = append(attrs, label.String("reason", event.Reason))
+		attrs = append(attrs, attribute.String("reason", event.Reason))
 	}
 	if event.Message != "" {
-		attrs = append(attrs, label.String("message", event.Message)) // maybe this should be a log?
+		attrs = append(attrs, attribute.String("message", event.Message)) // maybe this should be a log?
 	}
 	if event.Name != "" {
-		attrs = append(attrs, label.String("eventID", event.Namespace+"/"+event.Name))
+		attrs = append(attrs, attribute.String("eventID", event.Namespace+"/"+event.Name))
 	}
 
 	statusCode := codes.Ok
@@ -101,12 +101,12 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		statusCode = codes.Error
 	}
 
-	return &tracesdk.SpanData{
-		SpanContext: trace.SpanContext{
-			TraceID: remoteContext.TraceID,
+	return &tracesdk.SpanSnapshot{
+		SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: remoteContext.TraceID(),
 			SpanID:  eventToSpanID(event),
-		},
-		ParentSpanID:    remoteContext.SpanID,
+		}),
+		ParentSpanID:    remoteContext.SpanID(),
 		SpanKind:        trace.SpanKindInternal,
 		Name:            fmt.Sprintf("%s.%s", event.InvolvedObject.Kind, event.Reason),
 		StartTime:       eventTime(event),
