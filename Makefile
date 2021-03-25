@@ -59,7 +59,7 @@ docker-build: test
 	docker build . -t ${IMG}
 
 # Push the docker image
-docker-push:
+docker-push: docker-build
 	docker push ${IMG}
 
 # find or download controller-gen

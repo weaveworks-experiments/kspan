@@ -19,12 +19,16 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
+	"strings"
 
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/propagators"
+	"go.opentelemetry.io/otel/propagation"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -47,33 +51,72 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-func setupOTLP(collectorAddr, serviceName string) (tracesdk.SpanExporter, error) {
-	exp, err := otlp.NewExporter(
-		otlp.WithInsecure(),
-		otlp.WithAddress(collectorAddr),
-	)
+func setupOTLP(ctx context.Context, addr string, headers string, secured bool) (tracesdk.SpanExporter, error) {
+	setupLog.Info("Setting up OTLP Exporter", "addr", addr)
+
+	var exp *otlp.Exporter
+	var err error
+
+	headersMap := make(map[string]string)
+	if headers != "" {
+		ha := strings.Split(headers, ",")
+		for _, h := range ha {
+			parts := strings.Split(h, "=")
+			if len(parts) != 2 {
+				setupLog.Error(errors.New("Error parsing OTLP header"), "header parts length is not 2", "header", h)
+				continue
+			}
+			headersMap[parts[0]] = parts[1]
+		}
+	}
+
+	if secured {
+		exp, err = otlp.NewExporter(
+			ctx,
+			otlpgrpc.NewDriver(
+				otlpgrpc.WithEndpoint(addr),
+				otlpgrpc.WithHeaders(headersMap),
+				otlpgrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, "")),
+			),
+		)
+	} else {
+		exp, err = otlp.NewExporter(
+			ctx,
+			otlpgrpc.NewDriver(
+				otlpgrpc.WithEndpoint(addr),
+				otlpgrpc.WithHeaders(headersMap),
+				otlpgrpc.WithInsecure(),
+			),
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
-	global.SetTextMapPropagator(propagators.TraceContext{})
+
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	return exp, err
 }
 
 func main() {
 	var metricsAddr string
-	var collectorAddr string
+	var otlpAddr string
+	var otlpHeaders string
+	var otlpSecured bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&collectorAddr, "otlp-addr", "otlp-collector.default:55680", "Address to send traces to")
+	flag.StringVar(&otlpAddr, "otlp-addr", "otlp-collector.default:55680", "Address to send traces to")
+	flag.StringVar(&otlpHeaders, "otlp-headers", "", "Add headers key/values pairs to OTLP communication")
+	flag.BoolVar(&otlpSecured, "otlp-secured", false, "Use TLS for OTLP export")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	spanExporter, err := setupOTLP(collectorAddr, "events")
+	ctx := context.Background()
+	spanExporter, err := setupOTLP(ctx, otlpAddr, otlpHeaders, otlpSecured)
 	if err != nil {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
 	}
-	defer spanExporter.Shutdown(context.Background())
+	defer spanExporter.Shutdown(ctx)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,

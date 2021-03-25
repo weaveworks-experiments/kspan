@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,7 +60,7 @@ func getUpdateSource(obj v1.Object, subFields ...string) (source string, operati
 
 // If we reach an object with no owner and no recent events, start a new trace.
 // Trace ID is a hash of object UID + generation.
-func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object) (*tracesdk.SpanData, error) {
+func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object) (*tracesdk.SpanSnapshot, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -73,17 +73,17 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 		updateTime = time.Now() // TODO: can we use the time of the event that triggered this instead?
 	}
 
-	attrs := []label.KeyValue{
-		label.String("namespace", m.GetNamespace()),
-		label.String("name", m.GetName()),
-		label.Int64("generation", m.GetGeneration()),
+	attrs := []attribute.KeyValue{
+		attribute.String("namespace", m.GetNamespace()),
+		attribute.String("object", m.GetName()),
+		attribute.Int64("generation", m.GetGeneration()),
 	}
 
-	spanData := &tracesdk.SpanData{
-		SpanContext: trace.SpanContext{
+	spanData := &tracesdk.SpanSnapshot{
+		SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID: objectToTraceID(m),
 			SpanID:  objectToSpanID(m),
-		},
+		}),
 		SpanKind:   trace.SpanKindInternal,
 		Name:       fmt.Sprintf("%s.%s", obj.GetObjectKind().GroupVersionKind().Kind, operation),
 		StartTime:  updateTime,
@@ -104,11 +104,11 @@ func objectToSpanID(m v1.Object) trace.SpanID {
 	return h
 }
 
-func objectToTraceID(m v1.Object) trace.ID {
+func objectToTraceID(m v1.Object) trace.TraceID {
 	f := fnv.New128a()
 	f.Write([]byte(m.GetUID()))
 	binary.Write(f, binary.LittleEndian, m.GetGeneration())
-	var h trace.ID
+	var h trace.TraceID
 	_ = f.Sum(h[:0])
 	return h
 }

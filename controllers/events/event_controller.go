@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/api/trace"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	noTrace = trace.EmptySpanContext()
+	noTrace = trace.NewSpanContext(trace.SpanContextConfig{})
 )
 
 // EventWatcher listens to Events
@@ -134,7 +134,9 @@ func mapEventDirectlyToContext(ctx context.Context, client client.Client, event 
 	// The controller that issued this event has marked it as top-level
 	if event.Annotations["topLevelSpan"] == "true" {
 		m, _ := meta.Accessor(involved)
-		remoteContext.TraceID = objectToTraceID(m)
+		remoteContext = trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: objectToTraceID(m),
+		})
 		success = true
 	}
 	return
@@ -178,7 +180,7 @@ func (r *EventWatcher) getResource(s source) *resource.Resource {
 	res, found := r.resources[s]
 	if !found {
 		// Make a new resource and cache for later.  TODO: cache eviction
-		res = resource.New(semconv.ServiceNameKey.String(s.name), semconv.ServiceInstanceIDKey.String(s.instance))
+		res = resource.NewWithAttributes(semconv.ServiceNameKey.String(s.name), semconv.ServiceInstanceIDKey.String(s.instance))
 		r.resources[s] = res
 	}
 	return res
@@ -247,6 +249,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 			object: refFromObject(m),
 		}
 		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
+
 		if err != nil {
 			return noTrace, err
 		}

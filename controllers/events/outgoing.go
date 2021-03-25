@@ -5,27 +5,27 @@ import (
 	"sync"
 	"time"
 
-	apitrace "go.opentelemetry.io/otel/api/trace"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 )
 
 type outgoing struct {
 	sync.Mutex
 
-	byRef    map[objectReference]*tracesdk.SpanData
-	bySpanID map[apitrace.SpanID]*tracesdk.SpanData
+	byRef    map[objectReference]*tracesdk.SpanSnapshot
+	bySpanID map[apitrace.SpanID]*tracesdk.SpanSnapshot
 }
 
 func newOutgoing() *outgoing {
 	return &outgoing{
-		byRef:    make(map[objectReference]*tracesdk.SpanData),
-		bySpanID: make(map[apitrace.SpanID]*tracesdk.SpanData),
+		byRef:    make(map[objectReference]*tracesdk.SpanSnapshot),
+		bySpanID: make(map[apitrace.SpanID]*tracesdk.SpanSnapshot),
 	}
 }
 
 const timeFmt = "15:04:05.000"
 
-func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *tracesdk.SpanData) {
+func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *tracesdk.SpanSnapshot) {
 	r.Log.Info("adding span", "ref", ref, "name", span.Name, "start", span.StartTime.Format(timeFmt), "end", span.EndTime.Format(timeFmt))
 	r.outgoing.Lock()
 	defer r.outgoing.Unlock()
@@ -37,11 +37,11 @@ func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *
 			r.Log.Info("New span before old span", "oldSpan", prev.Name, "oldTime", prev.StartTime.Format(timeFmt), "newSpan", span.Name, "newTime", span.StartTime.Format(timeFmt))
 		}
 		r.Log.Info("emitting span", "ref", ref, "name", prev.Name)
-		r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{prev})
+		r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{prev})
 		// We do not remove from bySpanID at this time, in case it is needed for parent chains
 	}
 	r.outgoing.byRef[ref] = span
-	r.outgoing.bySpanID[span.SpanContext.SpanID] = span
+	r.outgoing.bySpanID[span.SpanContext.SpanID()] = span
 
 	for parentID := span.ParentSpanID; parentID.IsValid(); {
 		if parent, found := r.outgoing.bySpanID[parentID]; found {
@@ -60,9 +60,9 @@ func (r *EventWatcher) flushOutgoing(ctx context.Context, threshold time.Time) {
 	for k, span := range r.outgoing.byRef {
 		if !span.EndTime.After(threshold) {
 			r.Log.Info("deferred emit", "ref", k, "name", span.Name, "endTime", span.EndTime, "threshold", threshold)
-			r.Exporter.ExportSpans(ctx, []*tracesdk.SpanData{span})
+			r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{span})
 			delete(r.outgoing.byRef, k)
-			delete(r.outgoing.bySpanID, span.SpanContext.SpanID)
+			delete(r.outgoing.bySpanID, span.SpanContext.SpanID())
 		}
 	}
 	// Now clear out anything old that is still in bySpanID
