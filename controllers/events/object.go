@@ -60,7 +60,7 @@ func getUpdateSource(obj v1.Object, subFields ...string) (source string, operati
 
 // If we reach an object with no owner and no recent events, start a new trace.
 // Trace ID is a hash of object UID + generation.
-func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object) (*tracesdk.SpanSnapshot, error) {
+func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object, eventTime time.Time) (*tracesdk.SpanSnapshot, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 	res := r.getResource(source{name: updateSource})
 
 	if updateTime.IsZero() { // We didn't find a time in the object
-		updateTime = time.Now() // TODO: can we use the time of the event that triggered this instead?
+		updateTime = eventTime
 	}
 
 	attrs := []attribute.KeyValue{

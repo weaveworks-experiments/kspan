@@ -89,7 +89,7 @@ func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client clie
 	}
 
 	// See if we can map this object to a trace
-	remoteContext, err = r.makeSpanContextFromObject(ctx, involved)
+	remoteContext, err = r.makeSpanContextFromObject(ctx, involved, eventTime(event))
 	if err != nil {
 		return
 	}

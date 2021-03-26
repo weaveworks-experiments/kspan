@@ -219,7 +219,7 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	return noTrace, err
 }
 
-func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtime.Object) (trace.SpanContext, error) {
+func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtime.Object, eventTime time.Time) (trace.SpanContext, error) {
 	// See if we have any recent relevant event
 	if sc, err := recentSpanContextFromObject(ctx, obj, r.recent); err != nil || sc.HasTraceID() {
 		return sc, err
@@ -235,7 +235,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 		if err != nil {
 			return noTrace, err
 		}
-		remoteContext, err := r.makeSpanContextFromObject(ctx, owner)
+		remoteContext, err := r.makeSpanContextFromObject(ctx, owner, eventTime)
 		if err != nil {
 			return noTrace, err
 		}
@@ -248,7 +248,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 		ref := actionReference{
 			object: refFromObject(m),
 		}
-		spanData, err := r.createTraceFromTopLevelObject(ctx, obj)
+		spanData, err := r.createTraceFromTopLevelObject(ctx, obj, eventTime)
 
 		if err != nil {
 			return noTrace, err
