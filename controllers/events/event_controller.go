@@ -163,7 +163,19 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 		success = remoteContext.HasTraceID()
 	}
 	if !success {
-		return false, nil
+		// Create new parent for unidentified events
+		parentSpan, err := r.createTraceFromTopLevelObject(ctx, involved, event.Source.Component, event.LastTimestamp.Time)
+		if err != nil {
+			return false, err
+		}
+		// Set actor == object
+		parentRef := actionReference{
+			actor:  ref.object,
+			object: ref.object,
+		}
+		r.emitSpan(ctx, parentRef.object, parentSpan)
+		r.recent.store(parentRef, noTrace, parentSpan.SpanContext)
+		remoteContext = parentSpan.SpanContext
 	}
 
 	// Send out a span from the event details
@@ -191,6 +203,14 @@ func recentSpanContextFromObject(ctx context.Context, obj runtime.Object, recent
 	if err != nil {
 		return noTrace, err
 	}
+
+	// Check if actor == object first
+	objRef := refFromObject(m)
+	ref := actionReference{actor: objRef, object: objRef}
+	if spanContext, _, found := recent.lookupSpanContext(ref); found {
+		return spanContext, nil
+	}
+
 	// If no owners, this is a top-level object
 	if len(m.GetOwnerReferences()) == 0 {
 		objRef := refFromObject(m)
@@ -248,7 +268,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 		ref := actionReference{
 			object: refFromObject(m),
 		}
-		spanData, err := r.createTraceFromTopLevelObject(ctx, obj, eventTime)
+		spanData, err := r.createTraceFromTopLevelObject(ctx, obj, UnknownComponent, eventTime)
 
 		if err != nil {
 			return noTrace, err

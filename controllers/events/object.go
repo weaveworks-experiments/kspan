@@ -21,6 +21,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// UnknownComponent is trace service set for unidentified component
+const UnknownComponent = "unknown"
+
 // This is how we refer to objects - it's a subset of corev1.ObjectReference
 type objectReference struct {
 	Kind      string
@@ -55,18 +58,21 @@ func getUpdateSource(obj v1.Object, subFields ...string) (source string, operati
 		return source, operation, ts
 	}
 	// TODO: try some other ways
-	return "unknown", "unknown", ts
+	return UnknownComponent, UnknownComponent, ts
 }
 
 // If we reach an object with no owner and no recent events, start a new trace.
 // Trace ID is a hash of object UID + generation.
-func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object, eventTime time.Time) (*tracesdk.SpanSnapshot, error) {
+func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj runtime.Object, component string, eventTime time.Time) (*tracesdk.SpanSnapshot, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	updateSource, operation, updateTime := getUpdateSource(m, "f:spec")
+	updateSource, operation, updateTime := getUpdateSource(m, "f:status")
+	if updateSource == UnknownComponent {
+		updateSource = component
+	}
 	res := r.getResource(source{name: updateSource})
 
 	if updateTime.IsZero() { // We didn't find a time in the object
