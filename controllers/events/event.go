@@ -122,7 +122,7 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 // generate a spanID from an event.  The first time this event is issued has a span ID that can be derived from the event UID
 func eventToSpanID(event *corev1.Event) trace.SpanID {
 	f := fnv.New64a()
-	f.Write([]byte(event.UID))
+	_,_ = f.Write([]byte(event.UID))
 	if event.Count > 0 {
 		fmt.Fprint(f, event.Count)
 	}

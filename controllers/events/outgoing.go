@@ -37,7 +37,7 @@ func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *
 			r.Log.Info("New span before old span", "oldSpan", prev.Name, "oldTime", prev.StartTime.Format(timeFmt), "newSpan", span.Name, "newTime", span.StartTime.Format(timeFmt))
 		}
 		r.Log.Info("emitting span", "ref", ref, "name", prev.Name)
-		r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{prev})
+		_ = r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{prev})
 		// We do not remove from bySpanID at this time, in case it is needed for parent chains
 	}
 	r.outgoing.byRef[ref] = span
@@ -60,7 +60,7 @@ func (r *EventWatcher) flushOutgoing(ctx context.Context, threshold time.Time) {
 	for k, span := range r.outgoing.byRef {
 		if !span.EndTime.After(threshold) {
 			r.Log.Info("deferred emit", "ref", k, "name", span.Name, "endTime", span.EndTime, "threshold", threshold)
-			r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{span})
+			_ = r.Exporter.ExportSpans(ctx, []*tracesdk.SpanSnapshot{span})
 			delete(r.outgoing.byRef, k)
 			delete(r.outgoing.bySpanID, span.SpanContext.SpanID())
 		}

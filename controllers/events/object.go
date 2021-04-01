@@ -32,10 +32,6 @@ func (r objectReference) String() string {
 	return fmt.Sprintf("%s:%s/%s", r.Kind, r.Namespace, r.Name)
 }
 
-func (r objectReference) blank() bool {
-	return r == objectReference{}
-}
-
 // Given an object, come up with some source for the change, and the time it happened
 func getUpdateSource(obj v1.Object, subFields ...string) (source string, operation string, ts time.Time) {
 	// If it has managed fields, return the newest change that updated the spec
@@ -97,8 +93,8 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 
 func objectToSpanID(m v1.Object) trace.SpanID {
 	f := fnv.New64a()
-	f.Write([]byte(m.GetUID()))
-	binary.Write(f, binary.LittleEndian, m.GetGeneration())
+	_,_ = f.Write([]byte(m.GetUID()))
+	_ = binary.Write(f, binary.LittleEndian, m.GetGeneration())
 	var h trace.SpanID
 	_ = f.Sum(h[:0])
 	return h
@@ -106,8 +102,8 @@ func objectToSpanID(m v1.Object) trace.SpanID {
 
 func objectToTraceID(m v1.Object) trace.TraceID {
 	f := fnv.New128a()
-	f.Write([]byte(m.GetUID()))
-	binary.Write(f, binary.LittleEndian, m.GetGeneration())
+	_,_ = f.Write([]byte(m.GetUID()))
+	_ = binary.Write(f, binary.LittleEndian, m.GetGeneration())
 	var h trace.TraceID
 	_ = f.Sum(h[:0])
 	return h

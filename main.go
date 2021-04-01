@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"google.golang.org/grpc/credentials"
-	"log"
 	"os"
 	"strings"
 
@@ -116,7 +115,12 @@ func main() {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
 	}
-	defer spanExporter.Shutdown(ctx)
+	defer func(){
+		err := spanExporter.Shutdown(ctx)
+		if err != nil {
+			setupLog.Error(err, "unable to gracefully shutdown exporter")
+		}
+	}()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -142,11 +146,5 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
-	}
-}
-
-func handleErr(err error, message string) {
-	if err != nil {
-		log.Fatalf("%s: %v", message, err)
 	}
 }
