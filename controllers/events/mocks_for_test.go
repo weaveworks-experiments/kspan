@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake" //nolint:staticcheck
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -43,10 +43,6 @@ func newFakeExporter() *fakeExporter {
 // records spans sent to it, for testing purposes
 type fakeExporter struct {
 	SpanSnapshot []*tracesdk.SpanSnapshot
-}
-
-func (f *fakeExporter) reset() {
-	f.SpanSnapshot = nil
 }
 
 func (f *fakeExporter) dump() []string {

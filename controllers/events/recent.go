@@ -53,6 +53,7 @@ func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanCont
 	if !ok {
 		return noTrace, noTrace, false
 	}
+	//nolint:staticcheck
 	if value.lastUsed.Before(now.Add(-r.recentWindow)) {
 		// fmt.Printf("key %v info too old %s, %s\n", key, value.lastUsed, now.Add(-r.recentWindow))
 		//return noTrace, false

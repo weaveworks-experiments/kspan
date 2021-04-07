@@ -2726,7 +2726,7 @@ status:
   readyReplicas: 2
   replicas: 2
 `
-
+//nolint
 var p2deployment1 = `
 apiVersion: apps/v1
 kind: Deployment
