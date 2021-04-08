@@ -93,7 +93,7 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 
 func objectToSpanID(m v1.Object) trace.SpanID {
 	f := fnv.New64a()
-	_,_ = f.Write([]byte(m.GetUID()))
+	_, _ = f.Write([]byte(m.GetUID()))
 	_ = binary.Write(f, binary.LittleEndian, m.GetGeneration())
 	var h trace.SpanID
 	_ = f.Sum(h[:0])
@@ -102,7 +102,7 @@ func objectToSpanID(m v1.Object) trace.SpanID {
 
 func objectToTraceID(m v1.Object) trace.TraceID {
 	f := fnv.New128a()
-	_,_ = f.Write([]byte(m.GetUID()))
+	_, _ = f.Write([]byte(m.GetUID()))
 	_ = binary.Write(f, binary.LittleEndian, m.GetGeneration())
 	var h trace.TraceID
 	_ = f.Sum(h[:0])
