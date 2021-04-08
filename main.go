@@ -115,7 +115,7 @@ func main() {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
 	}
-	defer func(){
+	defer func() {
 		err := spanExporter.Shutdown(ctx)
 		if err != nil {
 			setupLog.Error(err, "unable to gracefully shutdown exporter")
