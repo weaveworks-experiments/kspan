@@ -50,8 +50,10 @@ func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *
 
 	for parentID := span.ParentSpanID; parentID.IsValid(); {
 		if parent, found := r.outgoing.bySpanID[parentID]; found {
-			//r.Log.Info("adjusting endtime", "parent", parent.Name, "from", parent.EndTime.Format(timeFmt), "to", span.EndTime.Format(timeFmt))
-			parent.EndTime = span.EndTime
+			if span.EndTime.After(parent.EndTime) {
+				//r.Log.Info("adjusting endtime", "parent", parent.Name, "from", parent.EndTime.Format(timeFmt), "to", span.EndTime.Format(timeFmt))
+				parent.EndTime = span.EndTime
+			}
 			parentID = parent.ParentSpanID
 		} else {
 			break
