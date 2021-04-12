@@ -79,8 +79,14 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 
 // Map the topmost owning object to a span, perhaps creating a new trace
 func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (success bool, ref actionReference, remoteContext trace.SpanContext, err error) {
+	var apiVersion string
+	ref, apiVersion, err = objectFromEvent(ctx, client, event)
+	if err != nil {
+		return
+	}
+
 	var involved runtime.Object
-	involved, ref, err = objectFromEvent(ctx, client, event)
+	involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
 	if err != nil {
 		if isNotFound(err) { // TODO: could apply naming heuristic to go from a deleted pod to its ReplicaSet
 			err = nil

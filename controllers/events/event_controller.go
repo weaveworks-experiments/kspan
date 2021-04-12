@@ -144,15 +144,21 @@ func mapEventDirectlyToContext(ctx context.Context, client client.Client, event 
 
 // attempt to map an Event to one or more Spans; return true if a Span was emitted
 func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, event *corev1.Event) (bool, error) {
-	involved, ref, err := objectFromEvent(ctx, r.Client, event)
+	ref, apiVersion, err := objectFromEvent(ctx, r.Client, event)
 	if err != nil {
 		return false, err
 	}
 
-	// If our rules tell us to map this event immediately to a context, do that.
-	success, remoteContext, err := mapEventDirectlyToContext(ctx, r.Client, event, involved)
-	if err != nil {
-		return false, err
+	var involved runtime.Object
+	if !success {
+		involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
+		if err == nil {
+			// If our rules tell us to map this event immediately to a context, do that.
+			success, remoteContext, err = mapEventDirectlyToContext(ctx, r.Client, event, involved)
+			if err != nil {
+				return false, err
+			}
+		}
 	}
 	if !success {
 		// If the involved object (or its owner) maps to recent activity, make a span parented off that.
@@ -161,6 +167,19 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 			return false, err
 		}
 		success = remoteContext.HasTraceID()
+	}
+	if !success {
+		// If we have an actor distinct from the object, try the actor
+		if ref.actor.Name != "" {
+			involved, err = getObject(ctx, r.Client, event.InvolvedObject.APIVersion, ref.actor.Kind, ref.actor.Namespace, ref.actor.Name)
+			if err == nil {
+				remoteContext, err = recentSpanContextFromObject(ctx, involved, r.recent)
+				if err != nil {
+					return false, err
+				}
+				success = remoteContext.HasTraceID()
+			}
+		}
 	}
 	if !success {
 		return false, nil

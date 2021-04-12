@@ -12,7 +12,6 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -43,15 +42,16 @@ func extractWordAfter(message, marker string) string {
 
 // Get the object relating to an event, after applying some heuristics
 // or a blank struct if this can't be done
-func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, actionReference, error) {
+func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (actionReference, string, error) {
 	if event.InvolvedObject.Name == "" {
-		return nil, actionReference{}, fmt.Errorf("No involved object")
+		return actionReference{}, "", fmt.Errorf("no involved object")
 	}
 
 	objRef := refFromObjRef(event.InvolvedObject)
 	ret := actionReference{
 		object: objRef,
 	}
+	apiVersion := event.InvolvedObject.APIVersion
 
 	switch {
 	case event.Source.Component == "deployment-controller" && event.InvolvedObject.Kind == "Deployment":
@@ -70,10 +70,10 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		}
 		ret.actor = ret.object
 		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		apiVersion = "v1"
 	}
 
-	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
-	return involved, ret, err
+	return ret, apiVersion, nil
 }
 
 func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanSnapshot {
