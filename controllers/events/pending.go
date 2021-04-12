@@ -85,20 +85,30 @@ func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client clie
 		return
 	}
 
-	var involved runtime.Object
-	involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
-	if err != nil {
-		if isNotFound(err) { // TODO: could apply naming heuristic to go from a deleted pod to its ReplicaSet
-			err = nil
+	if ref.actor.Name != "" {
+		// See if we have a recent event matching exactly this ref
+		_, remoteContext, success = r.recent.lookupSpanContext(ref)
+		if !success {
+			// Try the owner on its own, and if found use that as the parent
+			remoteContext, _, success = r.recent.lookupSpanContext(actionReference{object: ref.actor})
 		}
-		return
 	}
+	if !success {
+		var involved runtime.Object
+		involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
+		if err != nil {
+			if isNotFound(err) { // TODO: could apply naming heuristic to go from a deleted pod to its ReplicaSet
+				err = nil
+			}
+			return
+		}
 
-	// See if we can map this object to a trace
-	remoteContext, err = r.makeSpanContextFromObject(ctx, involved, eventTime(event))
-	if err != nil {
-		return
+		// See if we can map this object to a trace
+		remoteContext, err = r.makeSpanContextFromObject(ctx, involved, eventTime(event))
+		if err != nil {
+			return
+		}
+		success = remoteContext.HasTraceID()
 	}
-	success = remoteContext.HasTraceID()
 	return
 }

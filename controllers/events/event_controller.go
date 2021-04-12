@@ -149,6 +149,16 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 		return false, err
 	}
 
+	var remoteContext trace.SpanContext
+	var success bool
+	if ref.actor.Name != "" {
+		// See if we have a recent event matching exactly this ref, and use its parent if found
+		_, remoteContext, success = r.recent.lookupSpanContext(ref)
+		if !success {
+			// Try the owner on its own, and if found use that as the parent
+			remoteContext, _, success = r.recent.lookupSpanContext(actionReference{object: ref.actor})
+		}
+	}
 	var involved runtime.Object
 	if !success {
 		involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
