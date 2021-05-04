@@ -19,12 +19,12 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
-	"google.golang.org/grpc/credentials"
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"google.golang.org/grpc/credentials"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	"go.opentelemetry.io/otel/propagation"
