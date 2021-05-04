@@ -12,7 +12,6 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -36,23 +35,25 @@ func extractWordAfter(message, marker string) string {
 	pos += len(marker)
 	end := strings.IndexByte(message[pos:], ' ')
 	if end == -1 {
-		return ""
+		return message[pos:]
 	}
 	return message[pos : pos+end]
 }
 
 // Get the object relating to an event, after applying some heuristics
 // or a blank struct if this can't be done
-func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (runtime.Object, actionReference, error) {
+func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Event) (actionReference, string, error) {
 	if event.InvolvedObject.Name == "" {
-		return nil, actionReference{}, fmt.Errorf("No involved object")
+		return actionReference{}, "", fmt.Errorf("no involved object")
 	}
 
 	objRef := refFromObjRef(event.InvolvedObject)
 	ret := actionReference{
 		object: objRef,
 	}
+	apiVersion := event.InvolvedObject.APIVersion
 
+	// TODO: generalise these, take away source- and kind-specific checks
 	switch {
 	case event.Source.Component == "deployment-controller" && event.InvolvedObject.Kind == "Deployment":
 		// if we have a message like "Scaled down replica set foobar-7ff854f459 to 0"; extract the ReplicaSet name
@@ -62,6 +63,15 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		}
 		ret.actor = ret.object
 		ret.object = objectReference{Kind: "replicaset", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+	case event.Source.Component == "replicaset-controller" && event.InvolvedObject.Kind == "ReplicaSet":
+		// if we have a message like "Created pod: foo-5c5df9754b-4w2hj"; extract the Pod name
+		name := extractWordAfter(event.Message, "pod: ")
+		if name == "" {
+			break
+		}
+		ret.actor = ret.object
+		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		apiVersion = "v1"
 	case event.Source.Component == "statefulset-controller" && event.InvolvedObject.Kind == "StatefulSet":
 		// if we have a message like "create Pod ingester-3 in StatefulSet ingester successful"; extract the Pod name
 		name := extractWordAfter(event.Message, "Pod ")
@@ -70,10 +80,10 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 		}
 		ret.actor = ret.object
 		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		apiVersion = "v1"
 	}
 
-	involved, err := getObject(ctx, client, event.InvolvedObject.APIVersion, objRef.Kind, objRef.Namespace, objRef.Name)
-	return involved, ret, err
+	return ret, apiVersion, nil
 }
 
 func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.SpanContext) *tracesdk.SpanSnapshot {
