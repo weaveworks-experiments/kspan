@@ -1,4 +1,4 @@
-module github.com/bboreham/kspan
+module github.com/weaveworks-experiments/kspan
 
 go 1.13
 
