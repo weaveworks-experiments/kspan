@@ -46,6 +46,7 @@ func newWatchManager(kubeClient dynamic.Interface, mapper meta.RESTMapper) *watc
 // local interface to insulate from EventWatcher type
 type eventNotifier interface {
 	handleEvent(ctx context.Context, event *corev1.Event) error
+	captureObject(runtime.Object, string)
 }
 
 func (m *watchManager) watch(ctx context.Context, obj runtime.Object, ew eventNotifier) error {
@@ -78,6 +79,8 @@ func (m *watchManager) watch(ctx context.Context, obj runtime.Object, ew eventNo
 	if err != nil {
 		return fmt.Errorf("object watch failed: %w", err)
 	}
+
+	ew.captureObject(obj, "initial")
 
 	go wi.run(ew)
 
@@ -114,6 +117,8 @@ func (w *watchInfo) checkConditionUpdates(obj *unstructured.Unstructured, ew eve
 	if !found {
 		return nil
 	}
+
+	ew.captureObject(obj, "watch")
 
 	var latest time.Time
 	for _, conditionUncast := range conditions {
