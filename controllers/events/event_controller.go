@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"io"
 	"sync"
 	"time"
 
@@ -33,6 +34,7 @@ type EventWatcher struct {
 	Client    client.Client
 	Log       logr.Logger
 	Exporter  tracesdk.SpanExporter
+	Capture   io.Writer
 	ticker    *time.Ticker
 	startTime time.Time
 	recent    *recentInfoStore
@@ -84,6 +86,8 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// too old - ignore
 		return ctrl.Result{}, nil
 	}
+
+	r.captureObject(&event, "event")
 
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()

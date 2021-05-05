@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"os"
 	"strings"
 
@@ -34,6 +35,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/weaveworks-experiments/kspan/controllers/events"
 	// +kubebuilder:scaffold:imports
@@ -101,10 +103,12 @@ func main() {
 	var otlpAddr string
 	var otlpHeaders string
 	var otlpSecured bool
+	var captureFile string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&otlpAddr, "otlp-addr", "otlp-collector.default:55680", "Address to send traces to")
 	flag.StringVar(&otlpHeaders, "otlp-headers", "", "Add headers key/values pairs to OTLP communication")
 	flag.BoolVar(&otlpSecured, "otlp-secured", false, "Use TLS for OTLP export")
+	flag.StringVar(&captureFile, "capture-to", "", "Write out all updates received to this file")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -132,15 +136,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	var capture io.WriteCloser
+	if captureFile != "" {
+		capture, err = os.Create(captureFile)
+		if err != nil {
+			setupLog.Error(err, "unable to open capture file")
+			os.Exit(1)
+		}
+	}
 	if err = (&events.EventWatcher{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log,
 		Exporter: spanExporter,
+		Capture:  capture,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Events")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	// Close capture file when program shuts down
+	if err := mgr.Add(manager.RunnableFunc(func(stop <-chan struct{}) error {
+		<-stop
+		return capture.Close()
+	})); err != nil {
+		setupLog.Error(err, "unable to add close function")
+		os.Exit(1)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
