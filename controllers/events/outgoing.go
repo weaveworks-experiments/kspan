@@ -54,6 +54,10 @@ func (r *EventWatcher) emitSpan(ctx context.Context, ref objectReference, span *
 				//r.Log.Info("adjusting endtime", "parent", parent.Name, "from", parent.EndTime.Format(timeFmt), "to", span.EndTime.Format(timeFmt))
 				parent.EndTime = span.EndTime
 			}
+			if parentID == parent.ParentSpanID {
+				r.Log.Info("infinite loop!", "span", span.Name, "parent", parent.Name, "parentid", parentID)
+				break
+			}
 			parentID = parent.ParentSpanID
 		} else {
 			break
