@@ -19,6 +19,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	"github.com/weaveworks-experiments/kspan/pkg/mtime"
 )
 
 var (
@@ -85,7 +87,7 @@ func (r *EventWatcher) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Bump Prometheus metrics
 	totalEventsNum.WithLabelValues(event.Type, event.InvolvedObject.Kind, event.Reason).Inc()
 
-	adjustEventTime(&event, time.Now())
+	adjustEventTime(&event, mtime.Now())
 
 	err := r.handleEvent(ctx, &event)
 	if err != nil {
@@ -293,12 +295,12 @@ func (r *EventWatcher) runTicker() {
 	// Need to check more often than the window, otherwise things will be too old.
 	r.ticker = time.NewTicker(r.recent.recentWindow / 2)
 	for range r.ticker.C {
-		err := r.checkOlderPending(context.Background(), time.Now().Add(-r.recent.recentWindow))
+		err := r.checkOlderPending(context.Background(), mtime.Now().Add(-r.recent.recentWindow))
 		if err != nil {
 			r.Log.Error(err, "from checkOlderPending")
 		}
 		r.recent.expire()
-		r.flushOutgoing(context.Background(), time.Now().Add(-2*r.recent.recentWindow))
+		r.flushOutgoing(context.Background(), mtime.Now().Add(-2*r.recent.recentWindow))
 	}
 }
 

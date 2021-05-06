@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/weaveworks-experiments/kspan/pkg/mtime"
 )
 
 const (
@@ -39,14 +41,14 @@ func (r *recentInfoStore) store(key actionReference, parentContext, spanContext 
 	r.Lock()
 	defer r.Unlock()
 	r.info[key] = recentInfo{
-		lastUsed:      time.Now(),
+		lastUsed:      mtime.Now(),
 		spanContext:   spanContext,
 		parentContext: parentContext,
 	}
 }
 
 func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanContext, trace.SpanContext, bool) {
-	now := time.Now()
+	now := mtime.Now()
 	r.Lock()
 	defer r.Unlock()
 	value, ok := r.info[key]
@@ -64,7 +66,7 @@ func (r *recentInfoStore) lookupSpanContext(key actionReference) (trace.SpanCont
 }
 
 func (r *recentInfoStore) expire() {
-	now := time.Now()
+	now := mtime.Now()
 	expiry := now.Add(-r.expireAfter)
 	r.Lock()
 	defer r.Unlock()
