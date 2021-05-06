@@ -31,7 +31,8 @@ func newTestEventWatcher(initObjs ...runtime.Object) (context.Context, *EventWat
 		Log:      log,
 		Exporter: exporter,
 	}
-	r.initialize()
+
+	r.initialize(scheme)
 
 	return ctx, r, exporter, log
 }

@@ -39,6 +39,7 @@ type EventWatcher struct {
 	pending   []*corev1.Event
 	resources map[source]*resource.Resource
 	outgoing  *outgoing
+	scheme    *runtime.Scheme
 }
 
 // Info about the source of an event, e.g. kubelet
@@ -304,9 +305,9 @@ func (r *EventWatcher) runTicker() {
 	}
 }
 
-func (r *EventWatcher) initialize() {
+func (r *EventWatcher) initialize(scheme *runtime.Scheme) {
 	r.Lock()
-	r.startTime = time.Now()
+	r.scheme = scheme
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
 	r.outgoing = newOutgoing()
@@ -322,7 +323,7 @@ func (r *EventWatcher) stop() {
 
 // SetupWithManager to set up the watcher
 func (r *EventWatcher) SetupWithManager(mgr ctrl.Manager) error {
-	r.initialize()
+	r.initialize(mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Event{}).
 		Complete(r)
