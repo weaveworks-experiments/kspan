@@ -121,14 +121,15 @@ func getObject(ctx context.Context, c client.Client, apiVersion, kind, namespace
 	return obj, errors.Wrap(err, "unable to get object")
 }
 
-// canonicalise strings via lowercase - we see "deployment" vs "Deployment"
+// Canonicalise strings via lowercase - Kubernetes is case-independent.
+// (we don't canonicalise Kind)
 func lc(s string) string {
 	return strings.ToLower(s)
 }
 
 func refFromObjRef(oRef corev1.ObjectReference) objectReference {
 	return objectReference{
-		Kind:      lc(oRef.Kind),
+		Kind:      oRef.Kind,
 		Namespace: lc(oRef.Namespace),
 		Name:      lc(oRef.Name),
 	}
@@ -136,7 +137,7 @@ func refFromObjRef(oRef corev1.ObjectReference) objectReference {
 
 func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 	return objectReference{
-		Kind:      lc(oRef.Kind),
+		Kind:      oRef.Kind,
 		Namespace: lc(namespace),
 		Name:      lc(oRef.Name),
 	}
@@ -145,7 +146,7 @@ func refFromOwner(oRef v1.OwnerReference, namespace string) objectReference {
 func refFromObject(obj v1.Object) objectReference {
 	ty := obj.(v1.Type)
 	return objectReference{
-		Kind:      lc(ty.GetKind()),
+		Kind:      ty.GetKind(),
 		Namespace: lc(obj.GetNamespace()),
 		Name:      lc(obj.GetName()),
 	}

@@ -176,7 +176,7 @@ func TestDeploymentRolloutFromFlux(t *testing.T) {
 			name: "flux-event-later",
 			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			wantTraces: []string{
-				"0: flux deployment.Sync Commit e332e7bac962: Update nginx",
+				"0: flux Deployment.Sync Commit e332e7bac962: Update nginx",
 				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set hello-world-f77b4f6c8 to 1",
 				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: hello-world-f77b4f6c8-6tcj2",
 				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/hello-world-f77b4f6c8-6tcj2 to node2",
@@ -228,7 +228,7 @@ func TestStsRolloutFromFlux(t *testing.T) {
 			name: "flux-sts",
 			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
 			wantTraces: []string{
-				"0: flux statefulset.Sync Commit fc4e825b46ac: Update ingester to latest, in dev",
+				"0: flux StatefulSet.Sync Commit fc4e825b46ac: Update ingester to latest, in dev",
 				"1: statefulset-controller StatefulSet.SuccessfulDelete (0) delete Pod ingester-3 in StatefulSet ingester successful",
 				"2: kubelet Pod.Killing (1) Stopping container ingester",
 				"3: statefulset-controller StatefulSet.SuccessfulCreate (0) create Pod ingester-3 in StatefulSet ingester successful",
