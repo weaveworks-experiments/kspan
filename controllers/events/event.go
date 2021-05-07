@@ -25,6 +25,10 @@ func (p actionReference) String() string {
 	return fmt.Sprintf("actor: %s, object: %s", p.actor, p.object) // TODO improve this
 }
 
+func (p actionReference) IsTopLevel() bool {
+	return p.actor.Blank()
+}
+
 // look for the string 'marker' in 'message' and return the following space-separated word.
 // if anything goes wrong, return an empty string.
 func extractWordAfter(message, marker string) string {

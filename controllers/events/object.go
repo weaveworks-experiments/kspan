@@ -32,6 +32,10 @@ func (r objectReference) String() string {
 	return fmt.Sprintf("%s:%s/%s", r.Kind, r.Namespace, r.Name)
 }
 
+func (r objectReference) Blank() bool {
+	return r == objectReference{}
+}
+
 // Given an object, come up with some source for the change, and the time it happened
 func getUpdateSource(obj v1.Object, subFields ...string) (source string, operation string, ts time.Time) {
 	// If it has managed fields, return the newest change that updated the spec
