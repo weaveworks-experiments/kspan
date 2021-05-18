@@ -91,6 +91,7 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 	return spanData, nil
 }
 
+// create a spanID that will be consistent for a particular object
 func objectToSpanID(m v1.Object) trace.SpanID {
 	f := fnv.New64a()
 	_, _ = f.Write([]byte(m.GetUID()))
@@ -100,6 +101,7 @@ func objectToSpanID(m v1.Object) trace.SpanID {
 	return h
 }
 
+// we include the generation, so changes to the spec will start a new trace.
 func objectToTraceID(m v1.Object) trace.TraceID {
 	f := fnv.New128a()
 	_, _ = f.Write([]byte(m.GetUID()))
