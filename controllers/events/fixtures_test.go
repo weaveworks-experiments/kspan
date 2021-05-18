@@ -1050,7 +1050,7 @@ var fluxDeploymentUpdateEvents = []string{`
   firstTimestamp: "2020-12-03T17:53:52Z"
   involvedObject:
     apiVersion: apps/v1
-    kind: deployment
+    kind: Deployment
     name: hello-world
     namespace: default
   kind: Event
@@ -3543,7 +3543,7 @@ eventTime: null
 firstTimestamp: "2021-02-17T14:20:30Z"
 involvedObject:
   apiVersion: apps/v1
-  kind: statefulset
+  kind: StatefulSet
   name: ingester
   namespace: cortex
 kind: Event

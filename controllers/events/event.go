@@ -66,7 +66,7 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 			break
 		}
 		ret.actor = ret.object
-		ret.object = objectReference{Kind: "replicaset", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		ret.object = objectReference{Kind: "ReplicaSet", Namespace: lc(ret.object.Namespace), Name: lc(name)}
 	case event.Source.Component == "replicaset-controller" && event.InvolvedObject.Kind == "ReplicaSet":
 		// if we have a message like "Created pod: foo-5c5df9754b-4w2hj"; extract the Pod name
 		name := extractWordAfter(event.Message, "pod: ")
@@ -74,7 +74,7 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 			break
 		}
 		ret.actor = ret.object
-		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		ret.object = objectReference{Kind: "Pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
 		apiVersion = "v1"
 	case event.Source.Component == "statefulset-controller" && event.InvolvedObject.Kind == "StatefulSet":
 		// if we have a message like "create Pod ingester-3 in StatefulSet ingester successful"; extract the Pod name
@@ -83,7 +83,7 @@ func objectFromEvent(ctx context.Context, client client.Client, event *corev1.Ev
 			break
 		}
 		ret.actor = ret.object
-		ret.object = objectReference{Kind: "pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
+		ret.object = objectReference{Kind: "Pod", Namespace: lc(ret.object.Namespace), Name: lc(name)}
 		apiVersion = "v1"
 	}
 
