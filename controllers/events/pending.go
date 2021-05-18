@@ -65,7 +65,9 @@ func (r *EventWatcher) checkOlderPending(ctx context.Context, threshold time.Tim
 	for _, event := range olderPending {
 		success, ref, remoteContext, err := r.makeSpanContextFromEvent(ctx, r.Client, event)
 		if err != nil {
-			r.Log.Error(err, "dropping span", "name", event.UID)
+			if !isNotFound(err) {
+				r.Log.Error(err, "dropping span", "name", event.UID)
+			}
 			continue
 		}
 		if success {
