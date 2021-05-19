@@ -106,6 +106,7 @@ func (r *EventWatcher) makeSpanContextFromEvent(ctx context.Context, client clie
 			}
 			return
 		}
+		r.captureObject(involved, "initial")
 
 		// See if we can map this object to a trace
 		remoteContext, err = r.makeSpanContextFromObject(ctx, involved, eventTime(event))

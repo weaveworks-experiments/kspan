@@ -170,6 +170,7 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 	if !success {
 		involved, err = getObject(ctx, r.Client, apiVersion, ref.object.Kind, ref.object.Namespace, ref.object.Name)
 		if err == nil {
+			r.captureObject(involved, "initial")
 			// If our rules tell us to map this event immediately to a context, do that.
 			success, remoteContext, err = mapEventDirectlyToContext(ctx, r.Client, event, involved)
 			if err != nil {
@@ -190,6 +191,7 @@ func (r *EventWatcher) emitSpanFromEvent(ctx context.Context, log logr.Logger, e
 		if ref.actor.Name != "" {
 			involved, err = getObject(ctx, r.Client, event.InvolvedObject.APIVersion, ref.actor.Kind, ref.actor.Namespace, ref.actor.Name)
 			if err == nil {
+				r.captureObject(involved, "initial")
 				remoteContext, err = recentSpanContextFromObject(ctx, involved, r.recent)
 				if err != nil {
 					return false, err
@@ -271,6 +273,7 @@ func (r *EventWatcher) makeSpanContextFromObject(ctx context.Context, obj runtim
 		if err != nil {
 			return noTrace, err
 		}
+		r.captureObject(owner, "initial")
 		remoteContext, err := r.makeSpanContextFromObject(ctx, owner, eventTime)
 		if err != nil {
 			return noTrace, err
