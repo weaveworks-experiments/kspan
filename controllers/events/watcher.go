@@ -98,6 +98,18 @@ func (m *watchManager) getResourceInterface(gvk schema.GroupVersionKind, ns stri
 	return m.client.Resource(mapping.Resource).Namespace(ns), nil
 }
 
+func (m *watchManager) getWatch(obj runtime.Object) (*watchInfo, error) {
+	ma, _ := meta.Accessor(obj)
+	ref := refFromObject(ma)
+	m.Lock()
+	wi := m.watches[ref]
+	m.Unlock()
+	if wi == nil {
+		return nil, fmt.Errorf("watcher not found for object %q", ref)
+	}
+	return wi, nil
+}
+
 func (w *watchInfo) run(ew eventNotifier) {
 	for e := range w.watch.ResultChan() {
 		obj, ok := e.Object.(*unstructured.Unstructured)
