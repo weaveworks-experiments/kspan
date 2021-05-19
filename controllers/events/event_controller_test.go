@@ -86,67 +86,45 @@ func TestDeploymentRolloutWithManagedFields(t *testing.T) {
 func Test2PodDeploymentRollout(t *testing.T) {
 	g := o.NewWithT(t)
 
-	// Note: we can't inject two different versions of the Deployment
-	// (before and after) into FakeClient, so we only do 'after'.
-	var (
-		deploy2                unstructured.Unstructured
-		rs1, rs2               unstructured.Unstructured
-		pod1, pod2, pod3, pod4 unstructured.Unstructured
-	)
-	mustParse(t, p2deployment2, &deploy2)
-	mustParse(t, p2replicaSet1str, &rs1)
-	mustParse(t, p2replicaSet2str, &rs2)
-	mustParse(t, p2pod1str, &pod1)
-	mustParse(t, p2pod2str, &pod2)
-	mustParse(t, p2pod3str, &pod3)
-	mustParse(t, p2pod4str, &pod4)
-
 	tests := []struct {
-		name       string
-		perm       []int
+		filename   string
 		wantTraces []string
 	}{
 		{
-			name: "straight",
-			perm: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+			filename: "testdata/deployment-2-pods.yaml",
 			wantTraces: []string{
 				"0: kubectl-client-side-apply Deployment.Update ",
-				"1: replicaset-controller ReplicaSet.SuccessfulDelete (0) Deleted pod: bryan-podinfo-787c9986b5-tkd9p",
-				"2: kubelet Pod.Killing (1) Stopping container podinfod",
-				"3: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set bryan-podinfo-5c5df9754b to 1",
-				"4: replicaset-controller ReplicaSet.SuccessfulCreate (3) Created pod: bryan-podinfo-5c5df9754b-4w2hj",
-				"5: default-scheduler Pod.Scheduled (4) Successfully assigned default/bryan-podinfo-5c5df9754b-4w2hj to kind-control-plane",
-				"6: kubelet Pod.Pulling (4) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
-				"7: kubelet Pod.Pulled (4) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 7.556422631s",
-				"8: kubelet Pod.Created (4) Created container podinfod",
-				"9: kubelet Pod.Started (4) Started container podinfod",
-				"10: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 1",
-				"11: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set bryan-podinfo-5c5df9754b to 2",
-				"12: replicaset-controller ReplicaSet.SuccessfulCreate (11) Created pod: bryan-podinfo-5c5df9754b-bhj4w",
-				"13: default-scheduler Pod.Scheduled (12) Successfully assigned default/bryan-podinfo-5c5df9754b-bhj4w to kind-control-plane",
-				"14: kubelet Pod.Pulling (12) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.3\"",
-				"15: kubelet Pod.Pulled (12) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.3\" in 8.129591184s",
-				"16: kubelet Pod.Created (12) Created container podinfod",
-				"17: kubelet Pod.Started (12) Started container podinfod",
-				"18: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set bryan-podinfo-787c9986b5 to 0",
-				"19: kubelet Pod.Killing (18) Stopping container podinfod",
-				"20: replicaset-controller ReplicaSet.SuccessfulDelete (18) Deleted pod: bryan-podinfo-787c9986b5-fws9t",
+				"1: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set px-5d567cc74c to 1",
+				"2: replicaset-controller ReplicaSet.SuccessfulCreate (1) Created pod: px-5d567cc74c-ss4lb",
+				"3: default-scheduler Pod.Scheduled (2) Successfully assigned default/px-5d567cc74c-ss4lb to kind-control-plane",
+				"4: kubelet Pod.Pulling (2) Pulling image \"ghcr.io/stefanprodan/podinfo:5.0.0\"",
+				"5: kubelet Pod.Pulled (2) Successfully pulled image \"ghcr.io/stefanprodan/podinfo:5.0.0\" in 5.870196872s",
+				"6: kubelet Pod.Created (2) Created container podinfo",
+				"7: kubelet Pod.Started (2) Started container podinfo",
+				"8: replicaset-controller ReplicaSet.SuccessfulDelete (0) Deleted pod: px-7df978b9bf-jm22q",
+				"9: kubelet Pod.Killing (8) Stopping container podinfo",
+				"10: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set px-7df978b9bf to 1",
+				"11: deployment-controller Deployment.ScalingReplicaSet (0) Scaled up replica set px-5d567cc74c to 2",
+				"12: replicaset-controller ReplicaSet.SuccessfulCreate (11) Created pod: px-5d567cc74c-pmvzr",
+				"13: kubelet Pod.Pulled (12) Container image \"ghcr.io/stefanprodan/podinfo:5.0.0\" already present on machine",
+				"14: kubelet Pod.Created (12) Created container podinfo",
+				"15: kubelet Pod.Started (12) Started container podinfo",
+				"16: default-scheduler Pod.Scheduled (12) Successfully assigned default/px-5d567cc74c-pmvzr to kind-control-plane",
+				"17: deployment-controller Deployment.ScalingReplicaSet (0) Scaled down replica set px-7df978b9bf to 0",
+				"18: replicaset-controller ReplicaSet.SuccessfulDelete (17) Deleted pod: px-7df978b9bf-bfdrj",
+				"19: kubelet Pod.Killing (18) Stopping container podinfo",
 			},
 		},
 	}
 
-	threshold, err := time.Parse(time.RFC3339, p2deploymentUpdateEventsThresholdStr)
-	g.Expect(err).NotTo(o.HaveOccurred())
-
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx, r, exporter, _ := newTestEventWatcher(&deploy2, &rs1, &rs2, &pod1, &pod2, &pod3, &pod4)
+		t.Run(tt.filename, func(t *testing.T) {
+			objs, maxTimestamp, err := getInitialObjects(tt.filename)
+			g.Expect(err).NotTo(o.HaveOccurred())
+			ctx, r, exporter, _ := newTestEventWatcher(objs...)
 			defer r.stop()
-			for _, index := range tt.perm {
-				var event corev1.Event
-				mustParse(t, p2deploymentUpdateEvents[index], &event)
-				g.Expect(r.handleEvent(ctx, &event)).To(o.Succeed())
-			}
+			g.Expect(playback(ctx, r, tt.filename)).To(o.Succeed())
+			threshold := maxTimestamp.Add(time.Second * 10)
 			g.Expect(r.checkOlderPending(ctx, threshold)).To(o.Succeed())
 			r.flushOutgoing(ctx, threshold)
 			g.Expect(exporter.dump()).To(o.Equal(tt.wantTraces))

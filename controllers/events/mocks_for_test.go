@@ -31,7 +31,8 @@ func newTestEventWatcher(initObjs ...runtime.Object) (context.Context, *EventWat
 		Log:      log,
 		Exporter: exporter,
 	}
-	r.initialize()
+
+	r.initialize(scheme)
 
 	return ctx, r, exporter, log
 }
@@ -112,6 +113,9 @@ func (f *fakeExporter) sort() {
 			}
 			topSpan = i
 		}
+	}
+	if topSpan == -1 { // no top span found; can't do DFS
+		return
 	}
 
 	sortedSpans := make([]*tracesdk.SpanSnapshot, 0, len(f.SpanSnapshot))
