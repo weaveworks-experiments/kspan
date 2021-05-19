@@ -314,6 +314,7 @@ func (r *EventWatcher) runTicker() {
 
 func (r *EventWatcher) initialize(scheme *runtime.Scheme) {
 	r.Lock()
+	r.startTime = mtime.Now()
 	r.scheme = scheme
 	r.recent = newRecentInfoStore()
 	r.resources = make(map[source]*resource.Resource)
