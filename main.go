@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"go.opentelemetry.io/otel/propagation"
 	tracesdk "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -95,6 +96,7 @@ func setupOTLP(ctx context.Context, addr string, headers string, secured bool) (
 	}
 
 	otel.SetTextMapPropagator(propagation.TraceContext{})
+
 	return exp, err
 }
 
@@ -119,6 +121,11 @@ func main() {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
 	}
+	resourceAttrs, err := resource.New(ctx)
+	if err != nil {
+		setupLog.Error(err, "unable to initialize builtin resource attributes")
+	}
+
 	defer func() {
 		err := spanExporter.Shutdown(ctx)
 		if err != nil {
@@ -144,10 +151,12 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
 	if err = (&events.EventWatcher{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log,
 		Exporter: spanExporter,
+		Resource: resourceAttrs,
 		Capture:  capture,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Events")

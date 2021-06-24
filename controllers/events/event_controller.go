@@ -34,6 +34,7 @@ type EventWatcher struct {
 	Client    client.Client
 	Log       logr.Logger
 	Exporter  tracesdk.SpanExporter
+	Resource  *resource.Resource
 	Capture   io.Writer
 	ticker    *time.Ticker
 	startTime time.Time
