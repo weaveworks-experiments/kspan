@@ -43,6 +43,11 @@ To run Jaeger locally:
 docker run -d --name jaeger -p 16686:16686 -p 55680:55680 jaegertracing/opentelemetry-all-in-one
 ```
 
+To run Jaeger on kubernetes
+```
+kubectl apply -f config/kubernetes/quick-start.yaml
+```
+
 ## <a name="join"></a>Join in the fun!
 
 If you have any questions about, or feedback on `kspan`:
