@@ -115,6 +115,8 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 		statusCode = codes.Error
 	}
 
+	attrs = append(attrs, r.Resource.Attributes()...)
+
 	return &tracesdk.SpanSnapshot{
 		SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID: remoteContext.TraceID(),
