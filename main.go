@@ -121,10 +121,13 @@ func main() {
 		setupLog.Error(err, "unable to set up tracing")
 		os.Exit(1)
 	}
-	resourceAttrs, err := resource.New(ctx)
+
+	// These are applied in order so we remove all of them then add the ones from the environment
+	resourceAttrs, err := resource.New(context.Background(), resource.WithoutBuiltin(), resource.WithFromEnv(resource.FromEnv{}))
 	if err != nil {
 		setupLog.Error(err, "unable to initialize builtin resource attributes")
 	}
+	setupLog.Info("Additional resource attributes added: ", "attrs", resourceAttrs.String())
 
 	defer func() {
 		err := spanExporter.Shutdown(ctx)
