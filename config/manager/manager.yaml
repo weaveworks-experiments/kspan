@@ -20,7 +20,7 @@ spec:
         - /manager
         args:
         - --otlp-addr=otel-collector.default:4317
-        image: pavolloffay/kspan:1
+        image: weaveworks/kspan:main-12eefbe6
         name: manager
         resources:
           limits:
