@@ -1,15 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    control-plane: controller-manager
-  name: system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: kspan
   labels:
     control-plane: controller-manager
 spec:
@@ -26,8 +19,8 @@ spec:
       - command:
         - /manager
         args:
-        - --enable-leader-election
-        image: controller:latest
+        - --otlp-addr=otel-collector.default:4317
+        image: pavolloffay/kspan:1
         name: manager
         resources:
           limits:
@@ -37,3 +30,5 @@ spec:
             cpu: 100m
             memory: 20Mi
       terminationGracePeriodSeconds: 10
+      serviceAccountName: kspan
+      automountServiceAccountToken: true
