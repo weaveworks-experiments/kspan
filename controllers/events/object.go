@@ -73,9 +73,11 @@ func (r *EventWatcher) createTraceFromTopLevelObject(ctx context.Context, obj ru
 		updateTime = eventTime
 	}
 
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
 	attrs := []attribute.KeyValue{
-		attribute.String("namespace", m.GetNamespace()),
-		attribute.String("object", m.GetName()),
+		attribute.String("k8s.namespace.name", m.GetNamespace()),
+		attribute.String("k8s."+strings.ToLower(kind)+".name", m.GetName()),
+		attribute.String("kind", kind),
 		attribute.Int64("generation", m.GetGeneration()),
 	}
 
