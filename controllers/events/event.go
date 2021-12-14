@@ -96,8 +96,7 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 
 	attrs := []attribute.KeyValue{
 		attribute.String("kind", event.InvolvedObject.Kind),
-		attribute.String("namespace", event.InvolvedObject.Namespace),
-		attribute.String("object", event.InvolvedObject.Name),
+		attribute.String("k8s."+strings.ToLower(event.InvolvedObject.Kind)+".name", event.InvolvedObject.Name),
 	}
 
 	if event.Reason != "" {
@@ -108,6 +107,9 @@ func (r *EventWatcher) eventToSpan(event *corev1.Event, remoteContext trace.Span
 	}
 	if event.Name != "" {
 		attrs = append(attrs, attribute.String("eventID", event.Namespace+"/"+event.Name))
+	}
+	if event.InvolvedObject.Namespace != "" {
+		attrs = append(attrs, attribute.String("k8s.namespace.name", event.InvolvedObject.Namespace))
 	}
 
 	statusCode := codes.Ok
