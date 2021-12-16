@@ -134,6 +134,21 @@ func playback(ctx context.Context, r *EventWatcher, filename string) error {
 			err = r.handleEvent(ctx, &ev)
 			mtime.NowReset()
 			return err
+		case "watch":
+			dec := yaml.NewYAMLToJSONDecoder(bytes.NewBuffer(doc))
+			var u unstructured.Unstructured
+			err := dec.Decode(&u)
+			if err != nil {
+				return fmt.Errorf("error parsing: %v", err)
+			}
+			mtime.NowForce(details.Timestamp)
+			wi, err := r.watcher.getWatch(&u)
+			if err != nil {
+				return err
+			}
+			err = wi.checkConditionUpdates(&u, r)
+			mtime.NowReset()
+			return err
 		default:
 			return fmt.Errorf("style not recognized: %q", string(details.Style))
 		}
