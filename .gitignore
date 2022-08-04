@@ -1,3 +1,4 @@
+.DS_Store
 
 # Binaries for programs and plugins
 *.exe
@@ -6,6 +7,10 @@
 *.so
 *.dylib
 bin
+
+# ignore ide files (debug config etc...)
+/.vscode
+/.idea
 
 # Test binary, build with `go test -c`
 *.test
