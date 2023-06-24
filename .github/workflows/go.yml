@@ -21,8 +21,12 @@ jobs:
     - name: Lint
       uses: golangci/golangci-lint-action@v2
       with:
-          version: latest
-          args: --timeout=5m
+        version: latest
+        args: --timeout=5m
+
+    - name: Check gofmt
+      run: gofmt -l -e -d .
+      continue-on-error: true
 
     - name: Build
       run: make
