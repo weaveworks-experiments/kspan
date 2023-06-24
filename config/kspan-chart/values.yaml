@@ -1,0 +1,12 @@
+# Default values for kspan-chart.
+image:
+  repository: weaveworks/kspan
+  tag: main-12eefbe6
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 30Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi

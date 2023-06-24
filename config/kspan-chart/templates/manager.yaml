@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    control-plane: controller-manager
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - command:
+        - /manager
+        args:
+        - --otlp-addr=otel-collector.default:4317
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        name: manager
+        resources:
+          limits: {{ .Values.resources.limits | toYaml | nindent 12 }}
+          requests: {{ .Values.resources.requests | toYaml | nindent 12 }}
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: kspan
+      automountServiceAccountToken: true
